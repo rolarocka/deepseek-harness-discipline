@@ -23,14 +23,14 @@ deterministic discipline-guard plugin per preset.
 
      ```powershell
      New-Item -ItemType Directory -Force "$HOME\.dsh\.agent-presets" | Out-Null
-     Copy-Item -Recurse presets\planner, presets\builder, presets\surgeon, presets\advisor "$HOME\.dsh\.agent-presets\"
+     Copy-Item -Recurse presets\planner, presets\builder, presets\surgeon, presets\advisor, presets\design, presets\scribe, presets\tester, presets\hunter "$HOME\.dsh\.agent-presets\"
      ```
 
    - **bash (macOS/Linux):**
 
      ```bash
      mkdir -p "$HOME/.dsh/.agent-presets"
-     cp -r presets/planner presets/builder presets/surgeon presets/advisor "$HOME/.dsh/.agent-presets/"
+     cp -r presets/planner presets/builder presets/surgeon presets/advisor presets/design presets/scribe presets/tester presets/hunter "$HOME/.dsh/.agent-presets/"
      ```
 
 4. Restart dsh (or open a new session). The presets appear in the preset
@@ -40,6 +40,10 @@ deterministic discipline-guard plugin per preset.
    - `builder` — Builder (TDD Implementation)
    - `surgeon` — Surgeon (Minimal Fixes)
    - `advisor` — Advisor (Reviewer), read-only reviewer
+   - `design` — Designer (UI/UX)
+   - `scribe` — Scribe (Docs)
+   - `tester` — Tester (Coverage)
+   - `hunter` — Hunter (Sweep), read-only
 
 5. Verify: start a session on any preset and try a full `read` of a file
    larger than 25 KB without `offset`/`limit` — it is rejected with guidance

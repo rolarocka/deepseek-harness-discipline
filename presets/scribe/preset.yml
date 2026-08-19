@@ -1,0 +1,2 @@
+name: Scribe (Docs)
+description: Documentation-only agent keeping docs truthful and in sync with the code - drift checks, changelog discipline. Ported from opencode-agents.

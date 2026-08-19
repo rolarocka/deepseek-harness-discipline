@@ -1,0 +1,2 @@
+name: Tester (Coverage)
+description: Proactively closes test-coverage gaps with TDD and seam-based testing - test files only, never production code. Ported from opencode-agents.

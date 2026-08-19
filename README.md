@@ -1,6 +1,6 @@
 # dsh-discipline — Agent presets for DeepSeek Harness (DSH)
 
-Four agent presets carrying the battle-tested discipline from
+Eight agent presets carrying the battle-tested discipline from
 [opencode-agents](https://github.com/rolarocka/opencode-agents) — ported to
 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (DSH)
 agent presets (`cordis.yml`) — plus a deterministic **Discipline Guard**
@@ -10,7 +10,7 @@ plugin in every preset.
 
 | opencode-agents (source) | dsh-discipline (port) |
 |---|---|
-| Personas (plan, build, surgical, advisor) | 4 DSH agent presets (`presets/<id>/agent.cordis.yml`) |
+| Personas (plan, build, surgical, advisor, design, scribe, tester, hunter) | 8 DSH agent presets (`presets/<id>/agent.cordis.yml`) |
 | 30 universal rules in the persona prompt | The same 30 rules in every persona |
 | `permission: {edit: deny, bash: deny}` (plan/advisor) | Read-only presets without shell-tool rows |
 | `plugins/token-optimizer.js` (large-read redirect) | `presets/*/plugins/discipline-guard.js` |
@@ -24,6 +24,10 @@ plugin in every preset.
 | `builder` | TDD at seams, vertical slices, independent advisor review | ✅ |
 | `surgeon` | Ultra-precise minimal fixes, diagnosis loops, circuit breaker | ✅ |
 | `advisor` | Read-only reviewer — two-axis review (Standards + Spec), security check | ❌ |
+| `design` | UI/UX, theming and UI-framework implementation — design-system first, accessibility gate, dark/light parity | ✅ |
+| `scribe` | Documentation-only — keeps docs truthful and in sync with the code, drift checks, changelog discipline | ✅ |
+| `tester` | Proactively closes test-coverage gaps with TDD — test files only, never production code | ✅ |
+| `hunter` | Read-only whole-codebase sweep for bug classes, dead code and quality-gate risks | ❌ |
 
 Every preset embeds the **30 universal rules** (VERIFY BEFORE CLAIMING,
 QUALITY GATE, COMMIT GATE, LAYERED RECALL, TERSELY, CALL-GRAPH REACHABILITY,
@@ -59,13 +63,14 @@ cd dsh-discipline
 git clone https://github.com/rolarocka/dsh-discipline
 cd dsh-discipline
 mkdir -p "$HOME/.dsh/.agent-presets"
-cp -r presets/planner presets/builder presets/surgeon presets/advisor "$HOME/.dsh/.agent-presets/"
+cp -r presets/planner presets/builder presets/surgeon presets/advisor presets/design presets/scribe presets/tester presets/hunter "$HOME/.dsh/.agent-presets/"
 ```
 
 Then **restart dsh** (or open a new session) and pick "Planner (Architect)",
-"Builder (TDD Implementation)", "Surgeon (Minimal Fixes)" or
-"Advisor (Reviewer)" in the preset picker. The presets only appear after a
-restart because the roster is read at startup.
+"Builder (TDD Implementation)", "Surgeon (Minimal Fixes)", "Advisor (Reviewer)",
+"Designer (UI/UX)", "Scribe (Docs)", "Tester (Coverage)" or "Hunter (Sweep)"
+in the preset picker. The presets only appear after a restart because the
+roster is read at startup.
 
 ### Install with AI (one-liner)
 

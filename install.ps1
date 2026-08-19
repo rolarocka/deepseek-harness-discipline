@@ -22,7 +22,7 @@ if (-not (Test-Path $src)) {
 $dest = Join-Path $DshHome ".agent-presets"
 New-Item -ItemType Directory -Force $dest | Out-Null
 
-foreach ($preset in "planner", "builder", "surgeon", "advisor") {
+foreach ($preset in "planner", "builder", "surgeon", "advisor", "design", "scribe", "tester", "hunter") {
   $from = Join-Path $src $preset
   $to = Join-Path $dest $preset
   if (-not (Test-Path $from)) { throw "preset dir missing: $from" }
@@ -38,4 +38,5 @@ foreach ($preset in "planner", "builder", "surgeon", "advisor") {
 
 Write-Host ""
 Write-Host "Done. Restart dsh (or open a new session) and pick a preset:"
-Write-Host "  planner  (Architect, read-only) | builder (TDD) | surgeon (minimal fixes) | advisor (reviewer, read-only)"
+Write-Host "  planner (Architect, read-only) | builder (TDD) | surgeon (minimal fixes) | advisor (reviewer, read-only)"
+Write-Host "  design (UI/UX) | scribe (docs) | tester (coverage) | hunter (sweep, read-only)"
