@@ -6,6 +6,8 @@ Eight agent presets carrying the battle-tested discipline from
 agent presets (`cordis.yml`) — plus a deterministic **Discipline Guard**
 plugin in every preset.
 
+See [CHANGELOG](CHANGELOG.md) for a full history of changes.
+
 ## What is this?
 
 | opencode-agents (source) | deepseek-harness-discipline (port) |
