@@ -108,6 +108,16 @@ presets and absent (read-only) in planner/advisor/hunter. It runs in CI
 git config core.hooksPath hooks     # activates hooks/pre-commit
 ```
 
+## Compatibility with DSH
+
+DSH itself is in active development and its API can change without notice. The
+presets reference the `@deepseek-ai/dsh-*` rows by **bare id** (no version pin),
+so this repo does not promise a specific DSH release. Before relying on a
+preset, install against a DSH build you control and verify (see Installation).
+If you need a reproducible deployment, note the exact DSH version you tested
+against: the `discipline-guard` plugin hooks `tools/pre-execute` and keys its
+oscillation rings on `exec.agent`, both surfaces DSH could reshape.
+
 ## License & credits
 
 MIT — see [LICENSE](LICENSE) and [THIRD-PARTY-NOTICES](THIRD-PARTY-NOTICES.md).

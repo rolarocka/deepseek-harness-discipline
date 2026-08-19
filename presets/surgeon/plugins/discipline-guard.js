@@ -15,9 +15,33 @@
 //
 // The relative specifier resolves against the preset directory, so the file
 // travels with the preset (see dsh-agent-presets PresetTree.import()).
+//
+// The pure helpers (`canonical`, `isOscillating`) are exported and unit-tested
+// in test/discipline-guard.test.mjs; `apply` keeps the DSH-facing wiring. The
+// oscillation breaker keys rings per-agent via a WeakMap; if `exec.agent` is
+// ever missing (a DSH contract we do not pin to), it falls back to a shared
+// ring and logs a warning FIRST time instead of silently sleeping.
 
+export const OSC_WINDOW = 5; // A,B,A,B denies the 5th call
 const LARGE_READ_BYTES = 25600; // mirrors plugins/token-optimizer.js
-const OSC_WINDOW = 5;           // A,B,A,B denies the 5th call
+
+// Deep key-sort canonicalization so identical calls with reordered argument
+// keys still match (same heuristic as repeat-tool-reminder). Pure.
+export function canonical(value) {
+  if (Array.isArray(value)) return '[' + value.map(canonical).join(',') + ']'
+  if (value !== null && typeof value === 'object') {
+    return '{' + Object.keys(value).sort().map((k) => JSON.stringify(k) + ':' + canonical(value[k])).join(',') + '}'
+  }
+  return JSON.stringify(value)
+}
+
+// Deterministic oscillation test on a signature ring whose length is exactly
+// OSC_WINDOW: the ring spells A,B,A,B,A. Pure — no state here.
+export function isOscillating(ring) {
+  if (!Array.isArray(ring) || ring.length !== OSC_WINDOW) return false
+  const [s1, s2, s3, s4, s5] = ring
+  return s1 === s3 && s3 === s5 && s2 === s4 && s1 !== s2
+}
 
 const name = 'discipline-guard';
 
@@ -46,38 +70,39 @@ function apply(ctx) {
 
   if (fsService === undefined) return
 
-  // Deep key-sort canonicalization so identical calls with reordered
-  // argument keys still match (same heuristic as repeat-tool-reminder).
-  const canonical = (value) => {
-    if (Array.isArray(value)) return '[' + value.map(canonical).join(',') + ']'
-    if (value !== null && typeof value === 'object') {
-      return '{' + Object.keys(value).sort().map((k) => JSON.stringify(k) + ':' + canonical(value[k])).join(',') + '}'
-    }
-    return JSON.stringify(value)
-  }
-
   // Per-agent ring of recent canonical call signatures.
   const rings = new WeakMap()
+  // Fallback shared ring + first-time warning for the (unexpected) case where
+  // a pre-execute event carries no usable `exec.agent`.
+  let fallbackRing = []
+  let warnedMissingAgent = false
+  const agentKey = (exec) => (exec && typeof exec.agent === 'object' && exec.agent !== null ? exec.agent : null)
 
   ctx.on('tools/pre-execute', async (exec, next) => {
-    // 1) Oscillation circuit breaker: the last 5 signatures form A,B,A,B,A.
-    if (exec.agent !== undefined) {
-      let ring = rings.get(exec.agent)
+    // 1) Oscillation circuit breaker: the last OSC_WINDOW signatures form
+    //    A,B,A,B,A.
+    const key = agentKey(exec)
+    let ring
+    if (key !== null) {
+      ring = rings.get(key)
       if (ring === undefined) {
         ring = []
-        rings.set(exec.agent, ring)
+        rings.set(key, ring)
       }
-      const sig = exec.name + ' ' + canonical(exec.arguments)
-      ring.push(sig)
-      if (ring.length > OSC_WINDOW) ring.shift()
-      if (ring.length === OSC_WINDOW) {
-        const [s1, s2, s3, s4, s5] = ring
-        if (s1 === s3 && s3 === s5 && s2 === s4 && s1 !== s2) {
-          return {
-            kind: 'deny',
-            reason: 'CIRCUIT BREAKER: oscillating between "' + exec.name + '" and the previous call (' + OSC_WINDOW + '-call cycle). Change ONE variable or stop and ask the user; do not repeat the cycle.',
-          }
-        }
+    } else {
+      ring = fallbackRing
+      if (!warnedMissingAgent) {
+        console.warn('discipline-guard: exec.agent missing on tools/pre-execute — oscillation guard fell back to a shared ring (weaker, cross-agent).')
+        warnedMissingAgent = true
+      }
+    }
+    const sig = exec.name + ' ' + canonical(exec.arguments)
+    ring.push(sig)
+    if (ring.length > OSC_WINDOW) ring.shift()
+    if (isOscillating(ring)) {
+      return {
+        kind: 'deny',
+        reason: 'CIRCUIT BREAKER: oscillating between "' + exec.name + '" and the previous call (' + OSC_WINDOW + '-call cycle). Change ONE variable or stop and ask the user; do not repeat the cycle.',
       }
     }
 

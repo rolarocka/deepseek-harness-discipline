@@ -4,7 +4,9 @@
 #         .\install.ps1 -DshHome C:\custom\dsh
 #
 # After installing: restart dsh (or open a new session) and pick a preset in
-# the picker. Existing presets with the same id are overwritten.
+# the picker. Existing presets with the same id are NOT deleted — they are
+# moved aside to a timestamped `.bak` directory first, so a broken install can
+# be rolled back.
 # NOTE: this file is intentionally ASCII-only so it parses in every
 # PowerShell version regardless of BOM handling.
 
@@ -26,11 +28,15 @@ foreach ($preset in "planner", "builder", "surgeon", "advisor", "design", "scrib
   $from = Join-Path $src $preset
   $to = Join-Path $dest $preset
   if (-not (Test-Path $from)) { throw "preset dir missing: $from" }
-  # Remove first: Copy-Item -Recurse into an existing directory would nest
-  # the source as a child ($to\$preset) instead of replacing it.
+  # Never delete the previous preset: move it aside to a timestamped backup so
+  # a bad install can be reverted. Copy-Item -Recurse into an existing dir
+  # would nest the source as a child ($to\$preset), so the target must be gone
+  # (or moved) first.
   if (Test-Path $to) {
-    Remove-Item -Recurse -Force $to
-    Write-Host "replacing existing preset: $preset"
+    $stamp = Get-Date -Format "yyyyMMdd-HHmmss"
+    $bak = "$to.$stamp.bak"
+    Move-Item -Path $to -Destination $bak
+    Write-Host "backed up existing preset: $bak"
   }
   Copy-Item -Recurse $from $to
   Write-Host "installed $preset -> $to"

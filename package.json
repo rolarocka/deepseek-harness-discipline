@@ -1,0 +1,15 @@
+{
+  "name": "deepseek-harness-discipline",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "DSH agent presets with the battle-tested opencode-agents discipline.",
+  "scripts": {
+    "test": "node --test",
+    "check": "node shared/check-consistency.mjs",
+    "test:all": "npm test && npm run check"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
