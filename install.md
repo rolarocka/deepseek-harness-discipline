@@ -16,7 +16,7 @@ from opencode-agents) plus a deterministic discipline-guard plugin per preset.
 
 2. Determine the DSH home (default `$HOME/.dsh`, or the value of `DSH_HOME`).
 
-3. Copy the four preset directories into `<dsh-home>/.agent-presets/`:
+3. Copy the eight preset directories into `<dsh-home>/.agent-presets/`:
 
    - **PowerShell:** run `.\install.ps1` from the repo root (it does this for
      you). Or manually:
