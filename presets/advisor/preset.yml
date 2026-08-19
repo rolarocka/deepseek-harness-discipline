@@ -1,0 +1,2 @@
+name: Advisor (Reviewer)
+description: Read-only kritischer Reviewer — Zwei-Achsen-Review (Standards + Spec), Sicherheits-Check, Belege im file_path:line_number-Format. Port aus opencode-agents.
