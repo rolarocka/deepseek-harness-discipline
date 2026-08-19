@@ -88,6 +88,34 @@ Get-ChildItem "$HOME\.dsh\.agent-presets" -Directory
 #   read: CHANGELOG.md (without offset/limit) -> Error: ... is 120 KB. Use offset/limit ...
 ```
 
+## Maintaining this repo
+
+The eight `presets/<id>/agent.cordis.yml` files are **generated**, not edited by
+hand. The source of truth lives elsewhere in the repo:
+
+- `shared/fixed-head.txt` — the identity comment plus the `- id: persona` row,
+  its `text: |-` intro line, and the 30 universal rules. It is shared by every
+  preset and must keep its **trailing blank line** — the byte-significant
+  separation between rule 30 and the persona line below it.
+- `shared/agent-instr.txt`, `shared/shell-rows.txt`, `shared/fixed-tail.txt` —
+  everything else the presets have in common (the `agent-instructions` block,
+  the shell-tool rows, and the enclosing tool catalog).
+- `roles/<id>/header.txt` and `roles/<id>/persona.txt` — the per-role top
+  comment and the persona line + role section. Shell-less roles
+  (`advisor`, `hunter`, `planner`) additionally carry `roles/<id>/readonly.txt`.
+
+To regenerate or verify:
+
+```bash
+node shared/build.mjs           # compose and write the 8 presets
+node shared/build.mjs --check   # verify byte-exact; exit 1 on DRIFT
+```
+
+`--check` is self-healing: change a fragment and regeneration either reproduces
+a preset byte-for-byte or the guard fails loudly before anything is replaced.
+Fragments are whitespace-sensitive — trimming a trailing newline anywhere
+silently corrupts the assembled YAML, so run `--check` after every edit.
+
 ## License & credits
 
 MIT — see [LICENSE](LICENSE) and [THIRD-PARTY-NOTICES](THIRD-PARTY-NOTICES.md).

@@ -1,0 +1,5 @@
+# The `planner` agent preset: read-only planning persona ('The Architect'),
+# mounted once per process. Composition derived from the DSH `standard` preset
+# (DeepSeek Harness, MIT) with the opencode-agents persona rules (see
+# THIRD-PARTY-NOTICES.md).
+#

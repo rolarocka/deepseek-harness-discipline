@@ -1,0 +1,6 @@
+# ── shell ───────────────────────────────────────────────────────────────────
+
+# Read-only persona: no shell tools. The planner analyzes, reads, searches and
+# interviews; it never executes commands (see the ABSOLUTE CODE BAN in the
+# persona). Shell rows from the `standard` source were removed deliberately.
+
