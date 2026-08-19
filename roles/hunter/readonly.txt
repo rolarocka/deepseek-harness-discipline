@@ -1,6 +1,0 @@
-# ── shell ───────────────────────────────────────────────────────────────────
-
-# Read-only persona: no shell tools. The hunter sweeps and reports; it never
-# executes commands or edits (see the ROLE in the persona). Shell rows from
-# the `standard` source were removed deliberately.
-

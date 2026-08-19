@@ -1,5 +1,0 @@
-# The `design` agent preset: UI/UX implementation persona, mounted once per
-# process. Composition derived from the DSH `standard` preset (DeepSeek
-# Harness, MIT) with the opencode-agents persona rules (see
-# THIRD-PARTY-NOTICES.md).
-#
