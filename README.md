@@ -88,6 +88,26 @@ Get-ChildItem "$HOME\.dsh\.agent-presets" -Directory
 #   read: CHANGELOG.md (without offset/limit) -> Error: ... is 120 KB. Use offset/limit ...
 ```
 
+## Preset consistency
+
+The 30 universal rules, the persona header and the shell-tool block are
+duplicated across all eight `presets/<id>/agent.cordis.yml` files by design —
+each preset directory is self-contained and the installer copies whole
+directories. That deliberate duplication is guarded against silent drift:
+
+```bash
+node shared/check-consistency.mjs   # exit 1 (loudly, with file + line) on drift
+```
+
+It verifies the 30 rules and the persona header are byte-identical across all
+eight presets, and that the shell-tool block is present in the five shell
+presets and absent (read-only) in planner/advisor/hunter. It runs in CI
+(`.github/workflows/consistency.yml`) and, once installed, before every commit:
+
+```bash
+git config core.hooksPath hooks     # activates hooks/pre-commit
+```
+
 ## License & credits
 
 MIT — see [LICENSE](LICENSE) and [THIRD-PARTY-NOTICES](THIRD-PARTY-NOTICES.md).

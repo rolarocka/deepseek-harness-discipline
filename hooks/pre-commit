@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Pre-commit hook — fails loudly if the 8 presets have drifted apart.
+#
+# Install once per clone:
+#   git config core.hooksPath hooks
+set -euo pipefail
+
+node "$(dirname "$0")/../shared/check-consistency.mjs" || {
+  echo "preset-consistency: presets drifted apart — fix the drift before committing (see output above)." >&2
+  exit 1
+}
