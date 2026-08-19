@@ -1,4 +1,7 @@
-# The `standard` agent preset: the full coding agent, mounted once per process.
+# The `advisor` agent preset: read-only reviewer persona, mounted once per
+# process. Composition derived from the DSH `standard` preset (DeepSeek
+# Harness, MIT) with the opencode-agents persona rules (see
+# THIRD-PARTY-NOTICES.md).
 #
 # This file is an AGENT-PLANE composition. The roster mounts it ONCE under a
 # standing scope; every session naming it joins by scope parentage, so the
