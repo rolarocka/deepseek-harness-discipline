@@ -3,6 +3,10 @@
 // Ported from opencode-agents (github.com/rolarocka/opencode-agents):
 //   - plugins/token-optimizer.js  → the large-read redirect
 //   - universal rule 30           → the oscillation circuit breaker
+//
+// opencode-agents' plugins/token-optimizer.js is itself adapted from
+// github.com/ooples/token-optimizer-mcp (integrations/opencode), MIT License,
+// Copyright (c) 2025 ooples. See THIRD-PARTY-NOTICES.md in the repo root.
 // No LLM judgment: the guards either deny a call with a reason or delegate
 // via next(). Mounted by a preset row:
 //
