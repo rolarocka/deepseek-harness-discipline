@@ -78,6 +78,12 @@ roster is read at startup.
 curl -fsSL https://raw.githubusercontent.com/rolarocka/deepseek-harness-discipline/main/install.md | claude
 ```
 
+> **Tested against:** *deepseek-harness `vX.Y.Z` / commit `<hash>`* — not yet
+> recorded. Fill this in with the exact DSH version/commit the eight presets
+> were last verified against, so a later `deepseek-harness` update can be
+> compared. No version is enforced at runtime; this is just an honest reference
+> point.
+
 ## Verification
 
 ```powershell

@@ -58,6 +58,10 @@ from opencode-agents) plus a deterministic discipline-guard plugin per preset.
   and can be copied as a whole.
 - Requires a DSH deployment that ships the `standard` preset row set
   (`@deepseek-ai/dsh-*` packages, `dsh-persona`, `dsh-tool-fs`, etc.).
+- DSH is in active preview; cordis realm mechanics and service names can change
+  between releases. If a preset breaks after a DSH update, first check the
+  version gap against the version READMEs "Tested against" line before
+  assuming the repo is at fault.
 
 Contributors maintaining this repo: the pre-commit drift guard
 (`hooks/pre-commit`, activated with `git config core.hooksPath hooks`) is only

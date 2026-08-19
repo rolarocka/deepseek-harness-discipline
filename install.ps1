@@ -4,9 +4,9 @@
 #         .\install.ps1 -DshHome C:\custom\dsh
 #
 # After installing: restart dsh (or open a new session) and pick a preset in
-# the picker. Existing presets with the same id are NOT deleted — they are
-# moved aside to a timestamped `.bak` directory first, so a broken install can
-# be rolled back.
+# the picker. Existing presets with the same id are NOT deleted — the previous
+# version is preserved under <dest>/_backup/<timestamp>/<preset> before the
+# fresh copy is installed, so a broken install can always be reverted.
 # NOTE: this file is intentionally ASCII-only so it parses in every
 # PowerShell version regardless of BOM handling.
 
@@ -28,15 +28,18 @@ foreach ($preset in "planner", "builder", "surgeon", "advisor", "design", "scrib
   $from = Join-Path $src $preset
   $to = Join-Path $dest $preset
   if (-not (Test-Path $from)) { throw "preset dir missing: $from" }
-  # Never delete the previous preset: move it aside to a timestamped backup so
-  # a bad install can be reverted. Copy-Item -Recurse into an existing dir
-  # would nest the source as a child ($to\$preset), so the target must be gone
-  # (or moved) first.
+  # Never delete the previous preset: preserve it under _backup/<timestamp>/<preset>
+  # so a bad install can be reverted. The timestamp means repeated install runs
+  # each keep their own backup instead of overwriting each other. The target
+  # dir must be gone (or moved) first, otherwise Copy-Item -Recurse would nest
+  # the source as a child ($to\$preset).
   if (Test-Path $to) {
     $stamp = Get-Date -Format "yyyyMMdd-HHmmss"
-    $bak = "$to.$stamp.bak"
+    $bak = Join-Path (Join-Path $dest "_backup") (Join-Path $stamp $preset)
+    New-Item -ItemType Directory -Force (Split-Path -Parent $bak) | Out-Null
     Move-Item -Path $to -Destination $bak
-    Write-Host "backed up existing preset: $bak"
+    Write-Host "replacing existing preset: $preset"
+    Write-Host "  previous version backed up to: $bak"
   }
   Copy-Item -Recurse $from $to
   Write-Host "installed $preset -> $to"
