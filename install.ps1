@@ -1,4 +1,4 @@
-# install.ps1 - deploy the dsh-discipline presets into ~/.dsh/.agent-presets/
+# install.ps1 - deploy the deepseek-harness-discipline presets into ~/.dsh/.agent-presets/
 #
 # Usage:  .\install.ps1          (installs into $HOME/.dsh)
 #         .\install.ps1 -DshHome C:\custom\dsh

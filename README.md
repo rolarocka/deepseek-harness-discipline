@@ -1,4 +1,4 @@
-# dsh-discipline — Agent presets for DeepSeek Harness (DSH)
+# DeepSeek Harness (DSH) - Discipline
 
 Eight agent presets carrying the battle-tested discipline from
 [opencode-agents](https://github.com/rolarocka/opencode-agents) — ported to
@@ -8,7 +8,7 @@ plugin in every preset.
 
 ## What is this?
 
-| opencode-agents (source) | dsh-discipline (port) |
+| opencode-agents (source) | deepseek-harness-discipline (port) |
 |---|---|
 | Personas (plan, build, surgical, advisor, design, scribe, tester, hunter) | 8 DSH agent presets (`presets/<id>/agent.cordis.yml`) |
 | 30 universal rules in the persona prompt | The same 30 rules in every persona |
@@ -52,16 +52,16 @@ deterministic — no LLM judgment:
 ### Windows (PowerShell)
 
 ```powershell
-git clone https://github.com/rolarocka/dsh-discipline
-cd dsh-discipline
+git clone https://github.com/rolarocka/deepseek-harness-discipline
+cd deepseek-harness-discipline
 .\install.ps1
 ```
 
 ### Linux / macOS
 
 ```bash
-git clone https://github.com/rolarocka/dsh-discipline
-cd dsh-discipline
+git clone https://github.com/rolarocka/deepseek-harness-discipline
+cd deepseek-harness-discipline
 mkdir -p "$HOME/.dsh/.agent-presets"
 cp -r presets/planner presets/builder presets/surgeon presets/advisor presets/design presets/scribe presets/tester presets/hunter "$HOME/.dsh/.agent-presets/"
 ```
@@ -75,7 +75,7 @@ roster is read at startup.
 ### Install with AI (one-liner)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/rolarocka/dsh-discipline/main/install.md | claude
+curl -fsSL https://raw.githubusercontent.com/rolarocka/deepseek-harness-discipline/main/install.md | claude
 ```
 
 ## Verification

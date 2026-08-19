@@ -1,7 +1,7 @@
 # Third-Party Notices
 
 This document lists third-party software components used by, inspired by, or
-referenced in the `dsh-discipline` project, mirroring the attribution chain of
+referenced in the `deepseek-harness-discipline` project, mirroring the attribution chain of
 its source repository [opencode-agents](https://github.com/rolarocka/opencode-agents).
 
 ## Direct derivations

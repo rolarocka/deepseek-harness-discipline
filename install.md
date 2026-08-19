@@ -1,17 +1,17 @@
-# Install dsh-discipline (AI one-liner)
+# Install DeepSeek Harness (DSH) - Discipline (AI one-liner)
 
-You are installing the **dsh-discipline** preset pack into a local
-**DeepSeek Harness** (DSH) installation. The repo ships four DSH agent presets
-(planner, builder, surgeon, advisor — ported from opencode-agents) plus a
-deterministic discipline-guard plugin per preset.
+You are installing the **deepseek-harness-discipline** preset pack into a local
+**DeepSeek Harness** (DSH) installation. The repo ships eight DSH agent presets
+(planner, builder, surgeon, advisor, design, scribe, tester, hunter — ported
+from opencode-agents) plus a deterministic discipline-guard plugin per preset.
 
 ## What to do
 
 1. Clone the repo anywhere:
 
    ```bash
-   git clone https://github.com/rolarocka/dsh-discipline
-   cd dsh-discipline
+   git clone https://github.com/rolarocka/deepseek-harness-discipline
+   cd deepseek-harness-discipline
    ```
 
 2. Determine the DSH home (default `$HOME/.dsh`, or the value of `DSH_HOME`).
