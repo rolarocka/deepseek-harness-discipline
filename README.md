@@ -1,50 +1,47 @@
-# dsh-discipline — Agent-Presets für DeepSeek Harness (DSH)
+# dsh-discipline — Agent presets for DeepSeek Harness (DSH)
 
-Vier Agent-Presets mit der bewährten Disziplin aus
-[opencode-agents](https://github.com/rolarocka/opencode-agents) — portiert auf
+Four agent presets carrying the battle-tested discipline from
+[opencode-agents](https://github.com/rolarocka/opencode-agents) — ported to
 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (DSH)
-Agent-Presets (`cordis.yml`), plus ein deterministisches **Discipline-Guard**
-Plugin in jedem Preset.
+agent presets (`cordis.yml`) — plus a deterministic **Discipline Guard**
+plugin in every preset.
 
-**English:** DSH agent presets carrying the 30-rule discipline and
-plan/build/surgical/advisor personas from opencode-agents, plus a
-deterministic large-read + oscillation guard plugin per preset.
+## What is this?
 
-## Was ist das?
-
-| opencode-agents (Quelle) | dsh-discipline (Port) |
+| opencode-agents (source) | dsh-discipline (port) |
 |---|---|
-| Personas (plan, build, surgical, advisor) | 4 DSH-Agent-Presets (`presets/<id>/agent.cordis.yml`) |
-| 30 Universal Rules im Persona-Prompt | Dieselben 30 Regeln in jeder Persona |
-| `permission: {edit: deny, bash: deny}` (plan/advisor) | Read-only-Presets ohne Shell-Tools-Rows |
-| `plugins/token-optimizer.js` (Large-Read-Redirect) | `presets/*/plugins/discipline-guard.js` |
-| Regel 30 (CIRCUIT BREAKER, Loop-Erkennung) | Oszillations-Guard im selben Plugin |
+| Personas (plan, build, surgical, advisor) | 4 DSH agent presets (`presets/<id>/agent.cordis.yml`) |
+| 30 universal rules in the persona prompt | The same 30 rules in every persona |
+| `permission: {edit: deny, bash: deny}` (plan/advisor) | Read-only presets without shell-tool rows |
+| `plugins/token-optimizer.js` (large-read redirect) | `presets/*/plugins/discipline-guard.js` |
+| Rule 30 (CIRCUIT BREAKER, loop detection) | Oscillation guard in the same plugin |
 
 ## Presets
 
-| Preset | Rolle | Shell |
+| Preset | Role | Shell |
 |---|---|---|
-| `planner` | „The Architect" — read-only, interviewt vor dem Bauen (GRILL BEFORE BUILD), liefert exakten Ausführungsplan | ❌ |
-| `builder` | TDD an Seams, vertikale Slices, unabhängiges Advisor-Review | ✅ |
-| `surgeon` | Ultra-präzise Minimal-Fixes, Diagnose-Loops, Circuit Breaker | ✅ |
-| `advisor` | Read-only Reviewer — Zwei-Achsen-Review (Standards + Spec), Sicherheits-Check | ❌ |
+| `planner` | "The Architect" — read-only, interviews before building (GRILL BEFORE BUILD), delivers an exact execution plan | ❌ |
+| `builder` | TDD at seams, vertical slices, independent advisor review | ✅ |
+| `surgeon` | Ultra-precise minimal fixes, diagnosis loops, circuit breaker | ✅ |
+| `advisor` | Read-only reviewer — two-axis review (Standards + Spec), security check | ❌ |
 
-Jedes Preset enthält die **30 Universal Rules** (VERIFY BEFORE CLAIMING,
+Every preset embeds the **30 universal rules** (VERIFY BEFORE CLAIMING,
 QUALITY GATE, COMMIT GATE, LAYERED RECALL, TERSELY, CALL-GRAPH REACHABILITY,
-CIRCUIT BREAKER, …) + eine Rollen-Sektion.
+CIRCUIT BREAKER, …) plus a role section.
 
-## Discipline Guard (in jedem Preset)
+## Discipline Guard (in every preset)
 
-Das Plugin `plugins/discipline-guard.js` wird per relative Row
-(`name: './plugins/discipline-guard.js'`) vom Preset gemountet und reist mit
-dem Preset. Es ist deterministisch — kein LLM-Urteil:
+The plugin `plugins/discipline-guard.js` is mounted by a relative row
+(`name: './plugins/discipline-guard.js'`) and travels with the preset. It is
+deterministic — no LLM judgment:
 
-- **Large-Read-Guard:** `read` ohne `offset`/`limit` auf Dateien > 25 KB wird
-  mit Partial-Window-Guidance abgelehnt (Port von token-optimizer.js).
-- **Oszillations-Circuit-Breaker:** Muster A→B→A→B→A → der 5. Aufruf wird
-  abgelehnt (Regel 30). Ergänzt das host-weite `dsh-repeat-tool-reminder`
-  (nur identische Wiederholungen).
-- **Discipline-Prompt-Sektion:** immer-aktive Kurzregeln im System-Prompt.
+- **Large-read guard:** a `read` without `offset`/`limit` on files larger than
+  25 KB is rejected with partial-window guidance (ported from
+  token-optimizer.js).
+- **Oscillation circuit breaker:** the pattern A→B→A→B→A is rejected on the
+  5th call (rule 30). Complements the host-wide `dsh-repeat-tool-reminder`
+  (consecutive identical calls only).
+- **Discipline prompt section:** always-on short rules in the system prompt.
 
 ## Installation
 
@@ -65,10 +62,10 @@ mkdir -p "$HOME/.dsh/.agent-presets"
 cp -r presets/planner presets/builder presets/surgeon presets/advisor "$HOME/.dsh/.agent-presets/"
 ```
 
-Danach **dsh neu starten** (bzw. neue Session öffnen) und im Preset-Picker
-„Planer (Architekt)", „Builder (TDD-Implementierung)", „Surgeon (Minimal-Fixes)"
-oder „Advisor (Reviewer)" wählen. Die Presets erscheinen erst nach dem Neustart,
-weil das Roster beim Start gelesen wird.
+Then **restart dsh** (or open a new session) and pick "Planner (Architect)",
+"Builder (TDD Implementation)", "Surgeon (Minimal Fixes)" or
+"Advisor (Reviewer)" in the preset picker. The presets only appear after a
+restart because the roster is read at startup.
 
 ### Install with AI (one-liner)
 
@@ -76,20 +73,20 @@ weil das Roster beim Start gelesen wird.
 curl -fsSL https://raw.githubusercontent.com/rolarocka/dsh-discipline/main/install.md | claude
 ```
 
-## Verifikation
+## Verification
 
 ```powershell
-# Presets sichtbar?
+# Presets visible?
 Get-ChildItem "$HOME\.dsh\.agent-presets" -Directory
 
-# Guard aktiv? Ein Voll-Read einer Datei > 25 KB sollte abgelehnt werden:
-#   read: CHANGELOG.md (ohne offset/limit) -> Error: ... is 120 KB. Use offset/limit ...
+# Guard active? A full read of a file larger than 25 KB should be rejected:
+#   read: CHANGELOG.md (without offset/limit) -> Error: ... is 120 KB. Use offset/limit ...
 ```
 
-## Lizenz & Danksagung
+## License & credits
 
-MIT — siehe [LICENSE](LICENSE) und [THIRD-PARTY-NOTICES](THIRD-PARTY-NOTICES.md).
-Die 30 Regeln, Persona-Rollen und das Large-Read-Guard-Konzept stammen aus
-[opencode-agents](https://github.com/rolarocka/opencode-agents) (MIT); die
-Preset-Struktur folgt den mitgelieferten DSH-Presets
+MIT — see [LICENSE](LICENSE) and [THIRD-PARTY-NOTICES](THIRD-PARTY-NOTICES.md).
+The 30 rules, the persona roles and the large-read guard concept come from
+[opencode-agents](https://github.com/rolarocka/opencode-agents) (MIT); the
+preset structure follows the shipped DSH presets
 ([deepseek-harness](https://github.com/deepseek-ai/deepseek-harness), MIT).

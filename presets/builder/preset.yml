@@ -1,2 +1,2 @@
-name: Builder (TDD-Implementierung)
-description: Präziser Implementierungs-Agent mit TDD an Seams, vertikalen Slices und unabhängigem Advisor-Review. Port aus opencode-agents.
+name: Builder (TDD Implementation)
+description: Precise implementation agent with TDD at seams, vertical slices, and independent advisor review. Ported from opencode-agents.

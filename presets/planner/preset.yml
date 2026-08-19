@@ -1,2 +1,2 @@
-name: Planer (Architekt)
-description: Read-only Planungs-Agent — interviewt vor dem Bauen (GRILL BEFORE BUILD), verifiziert gegen echte Dateien, liefert einen exakten Ausführungsplan statt Code. Port aus opencode-agents.
+name: Planner (Architect)
+description: Read-only planning agent - interviews before building (GRILL BEFORE BUILD), verifies against actual files, delivers an exact execution plan instead of code. Ported from opencode-agents.

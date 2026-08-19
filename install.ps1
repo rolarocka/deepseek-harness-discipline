@@ -26,8 +26,13 @@ foreach ($preset in "planner", "builder", "surgeon", "advisor") {
   $from = Join-Path $src $preset
   $to = Join-Path $dest $preset
   if (-not (Test-Path $from)) { throw "preset dir missing: $from" }
-  if (Test-Path $to) { Write-Host "overwriting existing preset: $preset" }
-  Copy-Item -Recurse -Force $from $to
+  # Remove first: Copy-Item -Recurse into an existing directory would nest
+  # the source as a child ($to\$preset) instead of replacing it.
+  if (Test-Path $to) {
+    Remove-Item -Recurse -Force $to
+    Write-Host "replacing existing preset: $preset"
+  }
+  Copy-Item -Recurse $from $to
   Write-Host "installed $preset -> $to"
 }
 

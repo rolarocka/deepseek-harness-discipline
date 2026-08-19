@@ -36,9 +36,9 @@ deterministic discipline-guard plugin per preset.
 4. Restart dsh (or open a new session). The presets appear in the preset
    picker as:
 
-   - `planner` — Planer (Architekt), read-only planning agent
-   - `builder` — Builder (TDD-Implementierung)
-   - `surgeon` — Surgeon (Minimal-Fixes)
+   - `planner` — Planner (Architect), read-only planning agent
+   - `builder` — Builder (TDD Implementation)
+   - `surgeon` — Surgeon (Minimal Fixes)
    - `advisor` — Advisor (Reviewer), read-only reviewer
 
 5. Verify: start a session on any preset and try a full `read` of a file
