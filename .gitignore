@@ -5,3 +5,6 @@ desktop.ini
 
 # node
 node_modules/
+
+# local tool cache (token-optimizer MCP)
+.token-optimizer/
