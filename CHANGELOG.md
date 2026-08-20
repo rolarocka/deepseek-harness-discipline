@@ -64,6 +64,7 @@ touches all `presets/<id>` trees at once.
 - **Preset header comments** — reworded to describe the actual persona of each
   preset.
 - **Repo language** — made exclusively English.
+- **`install.md` overwrite note** — claimed existing presets are "overwritten"; corrected to the actual `install.ps1` behavior (previous version moved to `_backup/<timestamp>/<preset>` before the fresh copy, revertible) and noted that manual copies keep no backup.
 
 ### Tested against
 
