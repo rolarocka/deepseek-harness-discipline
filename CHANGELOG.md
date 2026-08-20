@@ -13,6 +13,13 @@ touches all `presets/<id>` trees at once.
 
 ### Added
 
+- **GATES LEDGER + REPORT AUDIT rules** — two rules added (30 → 32) across all
+  eight presets and the always-on discipline card, distilled from
+  [unlazy](https://github.com/Leonxlnx/unlazy): before non-trivial work,
+  acceptance gates are written as `- [ ] G: ... CHECK: <command> EXPECT:
+  <result>` and a checked box needs recorded evidence, not a feeling; and every
+  number in the final report is re-measured at report time instead of copied
+  from earlier in the session.
 - **Initial preset pack** — four DSH agent presets (`planner`, `builder`,
   `surgeon`, `advisor`) with the 30 universal rules and a deterministic
   `discipline-guard` plugin, ported from

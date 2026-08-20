@@ -13,7 +13,7 @@ See [CHANGELOG](CHANGELOG.md) for a full history of changes.
 | opencode-agents (source) | deepseek-harness-discipline (port) |
 |---|---|
 | Personas (plan, build, surgical, advisor, design, scribe, tester, hunter) | 8 DSH agent presets (`presets/<id>/agent.cordis.yml`) |
-| 30 universal rules in the persona prompt | The same 30 rules in every persona |
+| 30 universal rules in the persona prompt | The same 32 rules in every persona |
 | `permission: {edit: deny, bash: deny}` (plan/advisor) | Read-only presets without shell-tool rows |
 | `plugins/token-optimizer.js` (large-read redirect) | `presets/*/plugins/discipline-guard.js` |
 | Rule 30 (CIRCUIT BREAKER, loop detection) | Oscillation guard in the same plugin |
@@ -31,7 +31,7 @@ See [CHANGELOG](CHANGELOG.md) for a full history of changes.
 | `tester` | Proactively closes test-coverage gaps with TDD — test files only, never production code | ✅ |
 | `hunter` | Read-only whole-codebase sweep for bug classes, dead code and quality-gate risks | ❌ |
 
-Every preset embeds the **30 universal rules** (VERIFY BEFORE CLAIMING,
+Every preset embeds the **32 universal rules** (VERIFY BEFORE CLAIMING,
 QUALITY GATE, COMMIT GATE, LAYERED RECALL, TERSELY, CALL-GRAPH REACHABILITY,
 CIRCUIT BREAKER, …) plus a role section.
 
@@ -100,7 +100,7 @@ Get-ChildItem "$HOME\.dsh\.agent-presets" -Directory
 
 ## Preset consistency
 
-The 30 universal rules, the persona header and the shell-tool block are
+The 32 universal rules, the persona header and the shell-tool block are
 duplicated across all eight `presets/<id>/agent.cordis.yml` files by design —
 each preset directory is self-contained and the installer copies whole
 directories. That deliberate duplication is guarded against silent drift:
@@ -109,7 +109,7 @@ directories. That deliberate duplication is guarded against silent drift:
 node shared/check-consistency.mjs   # exit 1 (loudly, with file + line) on drift
 ```
 
-It verifies the 30 rules and the persona header are byte-identical across all
+It verifies the 32 rules and the persona header are byte-identical across all
 eight presets, and that the shell-tool block is present in the five shell
 presets and absent (read-only) in planner/advisor/hunter. It runs in CI
 (`.github/workflows/consistency.yml`) and, once installed, before every commit:

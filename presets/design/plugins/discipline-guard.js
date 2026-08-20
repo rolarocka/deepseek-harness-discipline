@@ -64,6 +64,8 @@ function apply(ctx) {
         '- LAYERED RECALL: memory/docs results capped at ~3-5, <=1.5 KB, name the source.',
         '- TERSELY: short answers (<4 lines unless detail is requested); no preamble/postamble.',
         '- CIRCUIT BREAKER: if a guard denied a call, change ONE variable or stop and ask; never retry the identical call.',
+        '- GATES LEDGER: before non-trivial work, write acceptance gates as "- [ ] G: ... CHECK: <command> EXPECT: <result>"; a checked box needs recorded evidence.',
+        '- REPORT AUDIT: re-measure every number in the final report at report time; never copy numbers from earlier in the session.',
       ].join('\n'),
     })
   }

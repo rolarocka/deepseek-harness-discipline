@@ -75,6 +75,15 @@ for completeness.
 - **Used for:** the grill-before-build and persona-role patterns the personas
   follow (via opencode-agents).
 
+### Leonxlnx/unlazy — GATES LEDGER + REPORT AUDIT
+
+- **Source:** https://github.com/Leonxlnx/unlazy
+- **License:** MIT
+- **Used for:** rules 31 (GATES LEDGER — acceptance gates written as
+  `- [ ] G: ... CHECK: <command> EXPECT: <result>` with recorded evidence, not
+  a feeling) and 32 (REPORT AUDIT — re-measure every number in the final
+  report at report time) in every persona.
+
 ## Licenses
 
 All components listed above are licensed under MIT unless otherwise noted
@@ -84,4 +93,4 @@ in the repo's `LICENSE` file.
 
 ---
 
-*Last updated: 2026-08-19*
+*Last updated: 2026-08-20*

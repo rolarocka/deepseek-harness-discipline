@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // check-consistency.mjs — drift guard for the 8 presets.
 //
-// The 30 universal rules, the persona header and the shell-tool block are
+// The 32 universal rules, the persona header and the shell-tool block are
 // intentionally duplicated across every presets/<id>/agent.cordis.yml because
 // each preset directory is self-contained (its plugin "travels with the
 // preset" and the installer copies whole directories). That deliberate
@@ -9,7 +9,7 @@
 // the others drifts silently. This script is the guard against that drift.
 //
 // It checks three things across all 8 presets:
-//   1. the 30 universal rules are byte-identical everywhere;
+//   1. the 32 universal rules are byte-identical everywhere;
 //   2. the persona header (the `- id: persona` row through the rules) is
 //      byte-identical everywhere;
 //   3. the shell-tool block state is as designed — PRESENT in builder, surgeon,
@@ -51,13 +51,13 @@ function extract(id) {
   const rulesStart = lines.findIndex((l) => /^      1\. VERIFY BEFORE CLAIMING/.test(l));
   let rulesEnd = -1;
   for (let i = Math.max(0, rulesStart); i < lines.length; i++) {
-    if (/^      30\. CIRCUIT BREAKER/.test(lines[i])) { rulesEnd = i; break; }
+    if (/^      32\. REPORT AUDIT/.test(lines[i])) { rulesEnd = i; break; }
   }
   if (personaIdx < 0 || rulesStart < 0 || rulesEnd < 0) return null;
   return {
     header: lines.slice(personaIdx, rulesStart), // persona row through the rules' leading lines
     headerStart: personaIdx + 1, // 1-based file line of the header block
-    rules: lines.slice(rulesStart, rulesEnd + 1), // the 30 rules
+    rules: lines.slice(rulesStart, rulesEnd + 1), // the 32 rules
     rulesStart: rulesStart + 1, // 1-based file line of the first rule
   };
 }
@@ -67,7 +67,7 @@ for (const id of PRESETS) {
   const ex = extract(id);
   if (!ex) {
     console.error(`UNRECOGNIZED structure in presets/${id}/agent.cordis.yml — ` +
-      `cannot locate the '- id: persona' row or the 30-rule block.`);
+      `cannot locate the '- id: persona' row or the 32-rule block.`);
     process.exit(2);
   }
   files[id] = ex;
@@ -105,7 +105,7 @@ for (const id of PRESETS) {
   const f = files[id];
 
   if (majRules === null) {
-    failures.push({ id, block: 'rules', msg: 'no majority value — presets disagree on the 30 rules (tie)' });
+    failures.push({ id, block: 'rules', msg: 'no majority value — presets disagree on the 32 rules (tie)' });
   } else if (f.rules.join('\n') !== majRules) {
     const dR = diffFromMajority(f.rules, majRules.split('\n'));
     failures.push({ id, block: 'rules', line: f.rulesStart + dR, a: majRules.split('\n')[dR], b: f.rules[dR] });
@@ -150,5 +150,5 @@ if (failures.length > 0) {
 
 const present = SHELL_PRESETS.join(', ');
 const absent = READ_ONLY_PRESETS.join(', ');
-console.log(`OK: 30 rules + persona header identical across ${PRESETS.length} presets; ` +
+console.log(`OK: 32 rules + persona header identical across ${PRESETS.length} presets; ` +
   `shell block present in (${present}) and absent in (${absent}).`);

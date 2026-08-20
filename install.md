@@ -47,7 +47,7 @@ from opencode-agents) plus a deterministic discipline-guard plugin per preset.
 
 5. Verify: start a session on any preset and try a full `read` of a file
    larger than 25 KB without `offset`/`limit` — it is rejected with guidance
-   (discipline guard active). The 30 universal rules are embedded in every
+   (discipline guard active). The 32 universal rules are embedded in every
    persona.
 
 ## Notes
