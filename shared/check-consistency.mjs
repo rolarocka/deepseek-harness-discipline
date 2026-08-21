@@ -8,12 +8,16 @@
 // duplication has one structural risk: an edit landed in one preset but not
 // the others drifts silently. This script is the guard against that drift.
 //
-// It checks three things across all 8 presets:
+// It checks four things across all 8 presets:
 //   1. the 32 universal rules are byte-identical everywhere;
 //   2. the persona header (the `- id: persona` row through the rules) is
 //      byte-identical everywhere;
-//   3. the shell-tool block state is as designed — PRESENT in builder, surgeon,
-//      design, scribe, tester; ABSENT (read-only) in planner, advisor, hunter.
+//   3. the shell-tool block state is as designed — BOTH rows (tool-bash and
+//      tool-pwsh) PRESENT in builder, surgeon, design, scribe, tester; NEITHER
+//      row present in planner, advisor, hunter;
+//   4. the preset-local plugins/discipline-guard.js copies are byte-identical
+//      everywhere (the plugin is duplicated by design and travels with the
+//      preset).
 //
 // On any mismatch it prints the offending file, the block, and the first line
 // where it diverges, then exits 1. No silent exit codes.
@@ -119,23 +123,60 @@ for (const id of PRESETS) {
   }
 }
 
-// shell-tool block state: PRESENT in shell presets, ABSENT in read-only ones.
+// shell-tool block state: BOTH rows (tool-bash + tool-pwsh) PRESENT in shell
+// presets, NEITHER row present in read-only ones. Checking only tool-bash —
+// as this guard once did — would let a read-only preset drift into shell
+// access by gaining a lone tool-pwsh row (and a shell preset lose pwsh
+// silently).
 const text = {};
 for (const id of PRESETS) text[id] = norm(readFileSync(join(presetsDir, id, 'agent.cordis.yml'), 'utf8'));
+const hasRow = (id, row) => new RegExp('^- id: ' + row, 'm').test(text[id]);
 for (const id of PRESETS) {
-  const hasShell = /^- id: tool-bash/m.test(text[id]);
-  if (SHELL_PRESETS.includes(id) && !hasShell) {
-    failures.push({ id, block: 'shell-block', msg: 'expected tool-bash row (shell preset) but it is missing' });
+  for (const row of ['tool-bash', 'tool-pwsh']) {
+    const has = hasRow(id, row);
+    if (SHELL_PRESETS.includes(id) && !has) {
+      failures.push({ id, block: 'shell-block', msg: `expected ${row} row (shell preset) but it is missing` });
+    }
+    if (READ_ONLY_PRESETS.includes(id) && has) {
+      failures.push({ id, block: 'shell-block', msg: `expected NO shell tools (read-only preset) but ${row} is present` });
+    }
   }
-  if (READ_ONLY_PRESETS.includes(id) && hasShell) {
-    failures.push({ id, block: 'shell-block', msg: 'expected NO shell tools (read-only preset) but tool-bash is present' });
+}
+
+// plugin identity: every preset carries its own plugins/discipline-guard.js
+// copy (self-contained install), so all 8 copies must stay byte-identical —
+// same majority-reference policy as the rules and persona header.
+const pluginLines = {};
+for (const id of PRESETS) {
+  const rel = join('plugins', 'discipline-guard.js');
+  const p = join(presetsDir, id, rel);
+  let st;
+  try {
+    st = statSync(p);
+  } catch {
+    console.error(`MISSING preset file: presets/${id}/${join('plugins', 'discipline-guard.js')}`);
+    process.exit(2);
+  }
+  if (!st.isFile()) {
+    console.error(`MISSING preset file: presets/${id}/${join('plugins', 'discipline-guard.js')}`);
+    process.exit(2);
+  }
+  pluginLines[id] = norm(readFileSync(p, 'utf8')).split('\n');
+}
+const majPlugin = majorityValue((id) => pluginLines[id].join('\n'));
+for (const id of PRESETS) {
+  if (majPlugin === null) {
+    failures.push({ id, file: `presets/${id}/plugins/discipline-guard.js`, block: 'discipline-guard.js', msg: 'no majority value — presets disagree on the plugin (tie)' });
+  } else if (pluginLines[id].join('\n') !== majPlugin) {
+    const dP = diffFromMajority(pluginLines[id], majPlugin.split('\n'));
+    failures.push({ id, file: `presets/${id}/plugins/discipline-guard.js`, block: 'discipline-guard.js', line: dP + 1, a: majPlugin.split('\n')[dP], b: pluginLines[id][dP] });
   }
 }
 
 if (failures.length > 0) {
   console.error('CONSISTENCY FAIL — presets drifted apart:\n');
   for (const f of failures) {
-    console.error(`  presets/${f.id}/agent.cordis.yml`);
+    console.error(`  ${f.file ?? `presets/${f.id}/agent.cordis.yml`}`);
     if (f.msg) {
       console.error(`    block: ${f.block} — ${f.msg}`);
     } else {
@@ -150,5 +191,5 @@ if (failures.length > 0) {
 
 const present = SHELL_PRESETS.join(', ');
 const absent = READ_ONLY_PRESETS.join(', ');
-console.log(`OK: 32 rules + persona header identical across ${PRESETS.length} presets; ` +
-  `shell block present in (${present}) and absent in (${absent}).`);
+console.log(`OK: 32 rules + persona header + discipline-guard.js identical across ${PRESETS.length} presets; ` +
+  `shell rows (tool-bash, tool-pwsh) present in (${present}) and absent in (${absent}).`);

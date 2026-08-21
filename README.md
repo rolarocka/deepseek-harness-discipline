@@ -110,8 +110,10 @@ node shared/check-consistency.mjs   # exit 1 (loudly, with file + line) on drift
 ```
 
 It verifies the 32 rules and the persona header are byte-identical across all
-eight presets, and that the shell-tool block is present in the five shell
-presets and absent (read-only) in planner/advisor/hunter. It runs in CI
+eight presets, that both shell rows (`tool-bash` **and** `tool-pwsh`) are
+present in the five shell presets and absent (read-only) in
+planner/advisor/hunter, and that all eight copies of
+`plugins/discipline-guard.js` are byte-identical. It runs in CI
 (`.github/workflows/consistency.yml`) and, once installed, before every commit:
 
 ```bash

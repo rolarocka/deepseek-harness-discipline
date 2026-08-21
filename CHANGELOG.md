@@ -29,6 +29,14 @@ touches all `presets/<id>` trees at once.
 - **License attribution** — inspiration chain in `THIRD-PARTY-NOTICES.md` and
   the ooples credit in the plugin header comment (the large-read guard is
   adapted from `ooples/token-optimizer-mcp`).
+- **Plugin-drift + full shell-row guard** — `shared/check-consistency.mjs`
+  additionally verifies that all eight preset-local copies of
+  `plugins/discipline-guard.js` stay byte-identical (same majority-reference
+  policy as the rules), and hardens the shell-block check from
+  "`tool-bash` present/absent" to "both `tool-bash` and `tool-pwsh`". This
+  closes two silent holes: a read-only preset could gain a lone `tool-pwsh`
+  row (shell access without alarm), and a shell preset could lose `tool-pwsh`
+  unnoticed.
 - **Preset-consistency drift guard** — `shared/check-consistency.mjs` verifies
   the 30 rules and persona header are byte-identical across all eight presets
   and that the shell-tool block is present/absent as designed. Runs in CI
