@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { canonical, isOscillating, OSC_WINDOW } from '../presets/builder/plugins/discipline-guard.js'
+import { canonical, isOscillating, OSC_WINDOW, PARTIAL_WINDOW_LINES, isPartialRead } from '../presets/builder/plugins/discipline-guard.js'
 
 test('canonical: primitives are JSON-represented', () => {
   assert.equal(canonical('read file.txt'), '"read file.txt"')
@@ -49,6 +49,24 @@ test('isOscillating: rejects non-array or wrong-length input', () => {
   assert.equal(isOscillating(null), false)
   assert.equal(isOscillating('AAAAA'), false)
   assert.equal(isOscillating(new Array(OSC_WINDOW + 1).fill('A')), false)
+})
+
+// isPartialRead: the large-read guard treats a read as partial only when it
+// is a bounded window — a finite, positive numeric limit within the cap.
+test('isPartialRead: bounded numeric limit within cap is partial', () => {
+  assert.equal(isPartialRead({ limit: 200 }), true)
+  assert.equal(isPartialRead({ offset: 10, limit: 200 }), true)
+  assert.equal(isPartialRead({ offset: 9000, limit: PARTIAL_WINDOW_LINES }), true) // cap boundary counts as partial
+})
+
+test('isPartialRead: missing or oversized limit is a full read', () => {
+  assert.equal(isPartialRead({}), false) // plain full read
+  assert.equal(isPartialRead({ offset: 5 }), false) // offset alone reads to EOF
+  assert.equal(isPartialRead({ limit: PARTIAL_WINDOW_LINES + 1 }), false) // oversized window
+  assert.equal(isPartialRead({ limit: 0 }), false)
+  assert.equal(isPartialRead({ limit: '200' }), false) // non-numeric limit
+  assert.equal(isPartialRead(null), false)
+  assert.equal(isPartialRead(undefined), false)
 })
 
 // Integration-style: replay the plugin's ring logic (push + shift + test on

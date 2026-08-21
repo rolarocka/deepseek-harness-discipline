@@ -54,6 +54,14 @@ touches all `presets/<id>` trees at once.
 
 ### Changed
 
+- **`discipline-guard.js` large-read guard hardened** — the guard now decides
+  via the new exported, unit-tested helper `isPartialRead`: only a finite,
+  positive `limit` of at most `PARTIAL_WINDOW_LINES` (500) lines counts as a
+  partial window. Previously any present `offset`/`limit` bypassed the guard,
+  so a single oversized `limit` could still read a whole >25 KB file (and an
+  offset without a limit read to EOF). The size check is also strictly
+  "over 25 KB" now, so a file of exactly 25 KiB passes as documented. Applied
+  to all eight preset copies.
 - **`discipline-guard.js` hardened** — the pure logic (`canonical`,
   `isOscillating`) is exported for testability; the oscillation breaker no
   longer sleeps silently when `exec.agent` is missing — it falls back to a

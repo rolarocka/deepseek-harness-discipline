@@ -16,14 +16,19 @@
 // The relative specifier resolves against the preset directory, so the file
 // travels with the preset (see dsh-agent-presets PresetTree.import()).
 //
-// The pure helpers (`canonical`, `isOscillating`) are exported and unit-tested
-// in test/discipline-guard.test.mjs; `apply` keeps the DSH-facing wiring. The
+// The pure helpers (`canonical`, `isOscillating`, `isPartialRead`) are
+// exported and unit-tested in test/discipline-guard.test.mjs; `apply` keeps the DSH-facing wiring. The
 // oscillation breaker keys rings per-agent via a WeakMap; if `exec.agent` is
 // ever missing (a DSH contract we do not pin to), it falls back to a shared
 // ring and logs a warning FIRST time instead of silently sleeping.
 
 export const OSC_WINDOW = 5; // A,B,A,B denies the 5th call
 const LARGE_READ_BYTES = 25600; // mirrors plugins/token-optimizer.js
+// A "partial window" is a bounded slice: a numeric limit no larger than this
+// many lines. offset alone (limit missing) reads to EOF, and a limit above
+// the cap is a full read in disguise — both are treated as full reads by the
+// large-read guard.
+export const PARTIAL_WINDOW_LINES = 500;
 
 // Deep key-sort canonicalization so identical calls with reordered argument
 // keys still match (same heuristic as repeat-tool-reminder). Pure.
@@ -43,6 +48,16 @@ export function isOscillating(ring) {
   return s1 === s3 && s3 === s5 && s2 === s4 && s1 !== s2
 }
 
+// True when the read arguments describe a bounded partial window: a finite,
+// positive numeric limit within PARTIAL_WINDOW_LINES. Anything else (no
+// limit, offset-only, oversized limit, non-numeric limit) is treated as a
+// full read by the large-read guard. Pure.
+export function isPartialRead(args) {
+  if (args === null || typeof args !== 'object') return false
+  const lim = args.limit
+  return typeof lim === 'number' && Number.isFinite(lim) && lim > 0 && lim <= PARTIAL_WINDOW_LINES
+}
+
 const name = 'discipline-guard';
 
 function apply(ctx) {
@@ -60,7 +75,7 @@ function apply(ctx) {
         '- VERIFY SIDE EFFECTS: after file/command changes, run a separate check before claiming success; report actual failures.',
         '- QUALITY GATE: after changes, run the project test/lint/build; discover the exact command, do not guess.',
         '- COMMIT GATE: never commit/push/tag without an explicit user ask.',
-        '- LARGE READS: files over 25 KB are read with the read tool offset/limit partial windows, never as one full read.',
+        '- LARGE READS: files over 25 KB are read with the read tool as offset/limit partial windows (up to 500 lines each), never as one full read.',
         '- LAYERED RECALL: memory/docs results capped at ~3-5, <=1.5 KB, name the source.',
         '- TERSELY: short answers (<4 lines unless detail is requested); no preamble/postamble.',
         '- CIRCUIT BREAKER: if a guard denied a call, change ONE variable or stop and ask; never retry the identical call.',
@@ -108,12 +123,14 @@ function apply(ctx) {
       }
     }
 
-    // 2) Large-read guard: a full `read` (no offset/limit) of a file above
-    //    the threshold is denied with partial-window guidance.
+    // 2) Large-read guard: a full `read` of a file above the threshold is
+    //    denied with partial-window guidance. A window counts as partial
+    //    only when it is bounded (see isPartialRead): no limit, an offset
+    //    without a limit, or an oversized limit all reach whole-file scale.
     if (exec.name !== 'read') return next()
     const args = exec.arguments
     if (args === null || typeof args !== 'object') return next()
-    if (args.offset !== undefined || args.limit !== undefined) return next()
+    if (isPartialRead(args)) return next()
     const raw = args.file_path
     if (typeof raw !== 'string' || raw.length === 0) return next()
     let target
@@ -128,11 +145,12 @@ function apply(ctx) {
     } catch {
       return next()
     }
-    if (info === undefined || typeof info.size !== 'number' || info.size < LARGE_READ_BYTES) return next()
+    // strictly "over 25 KB": a file of exactly LARGE_READ_BYTES passes.
+    if (info === undefined || typeof info.size !== 'number' || info.size <= LARGE_READ_BYTES) return next()
     const kb = Math.round(info.size / 1024)
     return {
       kind: 'deny',
-      reason: raw + ' is ' + kb + ' KB. Use the read tool with offset/limit partial windows (line-numbered) instead of one full read.',
+      reason: raw + ' is ' + kb + ' KB. Use the read tool with offset/limit partial windows (line-numbered, up to ' + PARTIAL_WINDOW_LINES + ' lines each) instead of one full read.',
     }
   })
 }
