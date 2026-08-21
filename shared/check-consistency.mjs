@@ -47,10 +47,15 @@ for (const id of PRESETS) {
 
 const norm = (s) => s.replace(/\r\n/g, '\n');
 
+// Read each agent.cordis.yml exactly once; every check below works off this
+// shared map instead of re-reading the files.
+const text = {};
+for (const id of PRESETS) text[id] = norm(readFileSync(join(presetsDir, id, 'agent.cordis.yml'), 'utf8'));
+
 // Extract { header, rules } line arrays for one file, or null if the
 // structure is unrecognizable (missing the - id: persona row or the rules).
 function extract(id) {
-  const lines = norm(readFileSync(join(presetsDir, id, 'agent.cordis.yml'), 'utf8')).split('\n');
+  const lines = text[id].split('\n');
   const personaIdx = lines.findIndex((l) => /^- id: persona/.test(l));
   const rulesStart = lines.findIndex((l) => /^      1\. VERIFY BEFORE CLAIMING/.test(l));
   let rulesEnd = -1;
@@ -128,8 +133,6 @@ for (const id of PRESETS) {
 // as this guard once did — would let a read-only preset drift into shell
 // access by gaining a lone tool-pwsh row (and a shell preset lose pwsh
 // silently).
-const text = {};
-for (const id of PRESETS) text[id] = norm(readFileSync(join(presetsDir, id, 'agent.cordis.yml'), 'utf8'));
 const hasRow = (id, row) => new RegExp('^- id: ' + row, 'm').test(text[id]);
 for (const id of PRESETS) {
   for (const row of ['tool-bash', 'tool-pwsh']) {
