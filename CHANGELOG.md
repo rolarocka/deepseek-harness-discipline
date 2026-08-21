@@ -54,6 +54,10 @@ touches all `presets/<id>` trees at once.
 
 ### Changed
 
+- **`install.ps1` backup retention** — after installing, only the newest
+  `$KeepBackups` (default 5) `_backup` timestamp stamps are kept and older
+  ones are pruned, so repeated installs no longer grow `_backup` without
+  bound. Override per run with `.\install.ps1 -KeepBackups 3`.
 - **`discipline-guard.js` large-read guard hardened** — the guard now decides
   via the new exported, unit-tested helper `isPartialRead`: only a finite,
   positive `limit` of at most `PARTIAL_WINDOW_LINES` (500) lines counts as a

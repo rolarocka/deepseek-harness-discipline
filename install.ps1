@@ -2,16 +2,20 @@
 #
 # Usage:  .\install.ps1          (installs into $HOME/.dsh)
 #         .\install.ps1 -DshHome C:\custom\dsh
+#         .\install.ps1 -KeepBackups 3   (keep the 3 newest backup stamps)
 #
 # After installing: restart dsh (or open a new session) and pick a preset in
 # the picker. Existing presets with the same id are NOT deleted — the previous
 # version is preserved under <dest>/_backup/<timestamp>/<preset> before the
-# fresh copy is installed, so a broken install can always be reverted.
+# fresh copy is installed, so a broken install can always be reverted. Only
+# the newest $KeepBackups backup stamps are kept; older stamps are pruned so
+# repeated installs do not grow _backup without bound.
 # NOTE: this file is intentionally ASCII-only so it parses in every
 # PowerShell version regardless of BOM handling.
 
 param(
-  [string]$DshHome = $(if ($env:DSH_HOME) { $env:DSH_HOME } else { Join-Path $HOME ".dsh" })
+  [string]$DshHome = $(if ($env:DSH_HOME) { $env:DSH_HOME } else { Join-Path $HOME ".dsh" }),
+  [int]$KeepBackups = 5
 )
 
 $ErrorActionPreference = "Stop"
@@ -43,6 +47,19 @@ foreach ($preset in "planner", "builder", "surgeon", "advisor", "design", "scrib
   }
   Copy-Item -Recurse $from $to
   Write-Host "installed $preset -> $to"
+}
+
+# Retention: keep only the newest $KeepBackups backup stamps. Stamp names are
+# "yyyyMMdd-HHmmss", so lexical order equals chronological order. Pruning runs
+# after the install so the fresh backup from this run is always among the
+# kept ones.
+$bakRoot = Join-Path $dest "_backup"
+if (Test-Path $bakRoot) {
+  $stale = Get-ChildItem $bakRoot -Directory | Sort-Object Name -Descending | Select-Object -Skip $KeepBackups
+  foreach ($d in $stale) {
+    Remove-Item -Recurse -Force $d.FullName
+    Write-Host "pruned old backup: $($d.Name)"
+  }
 }
 
 Write-Host ""

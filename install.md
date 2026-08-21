@@ -52,7 +52,7 @@ from opencode-agents) plus a deterministic discipline-guard plugin per preset.
 
 ## Notes
 
-- Existing presets with the same ids in `.agent-presets/` are preserved: `install.ps1` moves the previous version to `<dest>/_backup/<timestamp>/<preset>` before installing the fresh copy, so a broken install can be reverted. Manual copies (`cp`/`Copy-Item`) overwrite or merge instead and keep no backup — prefer `install.ps1`.
+- Existing presets with the same ids in `.agent-presets/` are preserved: `install.ps1` moves the previous version to `<dest>/_backup/<timestamp>/<preset>` before installing the fresh copy, so a broken install can be reverted. Repeated installs keep only the newest backup stamps (`.\install.ps1 -KeepBackups N`, default 5; older stamps are pruned). Manual copies (`cp`/`Copy-Item`) overwrite or merge instead and keep no backup — prefer `install.ps1`.
 - The presets reference the plugin file via a relative row
   (`./plugins/discipline-guard.js`), so each preset directory is self-contained
   and can be copied as a whole.
