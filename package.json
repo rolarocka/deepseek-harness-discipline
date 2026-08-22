@@ -1,6 +1,6 @@
 {
   "name": "deepseek-harness-discipline",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "description": "DSH agent presets with the battle-tested opencode-agents discipline.",

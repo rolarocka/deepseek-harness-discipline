@@ -9,3 +9,10 @@ node "$(dirname "$0")/../shared/check-consistency.mjs" || {
   echo "preset-consistency: presets drifted apart — fix the drift before committing (see output above)." >&2
   exit 1
 }
+
+# Fast unit tests for the guard plugins (pure helpers + apply() harness).
+# CI runs the same via `npm run test:all`.
+node --test || {
+  echo "unit tests failed — run 'npm test' for details." >&2
+  exit 1
+}

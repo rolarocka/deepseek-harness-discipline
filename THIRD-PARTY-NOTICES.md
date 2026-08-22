@@ -34,10 +34,14 @@ its source repository [opencode-agents](https://github.com/rolarocka/opencode-ag
 ### DeepSeek Harness (preset structure, plugin APIs)
 
 - **Source:** https://github.com/deepseek-ai/deepseek-harness
-- **License:** MIT
+- **License:** MIT (core), BSD-3-Clause for `@deepseek-ai/dsh-tool-bash`
 - **Used for:** the `agent.cordis.yml` composition structure and comments,
   derived from the shipped `standard` preset; and the `tools/pre-execute`,
-  `systemPrompt` and `fs` plugin interfaces the discipline-guard plugin uses.
+  `systemPrompt` and `fs` plugin interfaces the discipline-guard and
+  read-only-guard plugins use. Runtime verification against
+  `@deepseek-ai/dsh-tool-fs@0.1.1-rc.2` and `@deepseek-ai/dsh-tool-bash@0.1.1-rc.2`
+  confirmed the tool catalog (`read`/`write`/`edit` and `bash`/`pwsh` via
+  `defineTool({toolName:"bash"})`).
 
 ## Inspiration chain (concepts only, carried via opencode-agents)
 
@@ -93,4 +97,4 @@ in the repo's `LICENSE` file.
 
 ---
 
-*Last updated: 2026-08-20*
+*Last updated: 2026-08-22*

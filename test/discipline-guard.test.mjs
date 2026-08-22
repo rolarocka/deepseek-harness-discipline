@@ -108,18 +108,22 @@ test('recordCall: trims the ring to OSC_WINDOW', () => {
   assert.equal(ring[0], 'S3') // oldest trimmed entries are gone
 })
 
-// read-only-guard: the mutating fs tools are denied deterministically.
+// read-only-guard: the mutating fs tools + shell are denied deterministically.
 test('isDeniedTool: write and edit are denied; reads, shell and unknown are not', () => {
   assert.equal(isDeniedTool('write'), true)
   assert.equal(isDeniedTool('edit'), true)
+  assert.equal(isDeniedTool('bash'), true)
+  assert.equal(isDeniedTool('pwsh'), true)
+  assert.equal(isDeniedTool('tool:bash'), true)
+  assert.equal(isDeniedTool('tool-bash'), true)
+  assert.equal(isDeniedTool('tool:pwsh'), true)
   assert.equal(isDeniedTool('read'), false)
   assert.equal(isDeniedTool('read_image'), false)
-  assert.equal(isDeniedTool('bash'), false)
   assert.equal(isDeniedTool(undefined), false)
 })
 
-test('DENIED_TOOLS: exactly the mutating fs tools from dsh-tool-fs', () => {
-  assert.deepEqual(DENIED_TOOLS, ['write', 'edit'])
+test('DENIED_TOOLS: exactly the mutating fs + shell tools', () => {
+  assert.deepEqual(DENIED_TOOLS, ['write', 'edit', 'bash', 'pwsh'])
 })
 
 // --- apply() wiring: exercise the real plugin through a fake ctx so the
@@ -176,7 +180,7 @@ test('discipline-guard apply(): full read of a >25 KB file is denied with window
   assert.equal(await preExecute(execOf('read', { file_path: 'big.txt', offset: 1, limit: PARTIAL_WINDOW_LINES }), NEXT), 'allowed')
 })
 
-test('read-only-guard apply(): write and edit are denied, read passes through', async () => {
+test('read-only-guard apply(): write, edit, bash, pwsh are denied, read passes through', async () => {
   const { ctx, handlers } = fakeCtx()
   roApply(ctx)
   const preExecute = handlers["tools/pre-execute"]
@@ -186,5 +190,9 @@ test('read-only-guard apply(): write and edit are denied, read passes through', 
   assert.match(w.reason, /READ-ONLY PRESET/)
   const e = await preExecute(execOf('edit', { file_path: 'x.txt', old_string: 'a', new_string: 'b' }), NEXT)
   assert.equal(e.kind, 'deny')
+  const b = await preExecute(execOf('bash', { command: 'ls' }), NEXT)
+  assert.equal(b.kind, 'deny')
+  const p = await preExecute(execOf('tool:bash', { command: 'ls' }), NEXT)
+  assert.equal(p.kind, 'deny')
   assert.equal(await preExecute(execOf('read', { file_path: 'x.txt' }), NEXT), 'allowed')
 })

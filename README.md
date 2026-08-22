@@ -14,7 +14,7 @@ See [CHANGELOG](CHANGELOG.md) for a full history of changes.
 |---|---|
 | Personas (plan, build, surgical, advisor, design, scribe, tester, hunter) | 8 DSH agent presets (`presets/<id>/agent.cordis.yml`) |
 | 30 universal rules in the persona prompt | The same 32 rules in every persona |
-| `permission: {edit: deny, bash: deny}` (plan/advisor) | Read-only presets: no shell-tool rows + `read-only-guard` denies `write`/`edit` deterministically |
+| `permission: {edit: deny, bash: deny}` (plan/advisor) | Read-only presets: no shell-tool rows + `read-only-guard` denies `write`/`edit`/`bash`/`pwsh` deterministically |
 | `plugins/token-optimizer.js` (large-read redirect) | `presets/*/plugins/discipline-guard.js` |
 | Rule 30 (CIRCUIT BREAKER, loop detection) | Oscillation guard in the same plugin |
 
@@ -44,6 +44,8 @@ deterministic — no LLM judgment:
 - **Large-read guard:** a `read` at whole-file scale (no `limit`, an
   offset-only read, or a limit above 500 lines) of a file larger than 25 KB is
   rejected with partial-window guidance (ported from token-optimizer.js).
+  Policy thresholds are **25 KB / 500 lines** — stricter than DSH's own caps
+  (2000 lines / ~50 KB), so a windowed read is always bounded.
 - **Oscillation circuit breaker:** the pattern A→B→A→B→A is rejected on the
   5th call, and the denied call is not recorded — an identical retry denies
   again (hard stop) instead of shifting the cycle's phase. The breaker resumes
@@ -58,9 +60,10 @@ suite unconditionally — there is no row-level opt-out, so "read-only" cannot
 be enforced by omitting rows without also losing `read`. The preset-local
 plugin `plugins/read-only-guard.js` (mounted only in the three read-only
 presets) restores the enforcement half that opencode-agents carried as
-`permission: {edit: deny}`: every `write`/`edit` call is denied
+`permission: {edit: deny}`: every `write`/`edit`/`bash`/`pwsh` call is denied
 deterministically on `tools/pre-execute`, with an always-on prompt card
-stating the policy. Shell tools are already absent from those compositions.
+stating the policy. Shell tools are already absent from those compositions;
+the `bash`/`pwsh` deny is defense-in-depth against a mistakenly added row.
 The consistency guard verifies the plugin exists exactly there, is
 byte-identical across the three copies, and is mounted in no shell preset.
 
@@ -79,8 +82,8 @@ cd deepseek-harness-discipline
 ```bash
 git clone https://github.com/rolarocka/deepseek-harness-discipline
 cd deepseek-harness-discipline
-mkdir -p "$HOME/.dsh/.agent-presets"
-cp -r presets/planner presets/builder presets/surgeon presets/advisor presets/design presets/scribe presets/tester presets/hunter "$HOME/.dsh/.agent-presets/"
+./install.sh
+# or: DSH_HOME=/custom/dsh KEEP_BACKUPS=3 ./install.sh
 ```
 
 Then **restart dsh** (or open a new session) and pick "Planner (Architect)",
@@ -111,8 +114,8 @@ curl -fsSL https://raw.githubusercontent.com/rolarocka/deepseek-harness-discipli
 # Presets visible?
 Get-ChildItem "$HOME\.dsh\.agent-presets" -Directory
 
-# Guard active? A full read of a file larger than 25 KB should be rejected:
-#   read: CHANGELOG.md (without offset/limit) -> Error: ... is 120 KB. Use offset/limit ...
+# Guard active? Create a file larger than 25 KB and try a full read:
+#   read: <path-to->large-file.txt (without offset/limit) -> Error: ... is 28 KB. Read it in bounded partial windows: ...
 #
 # Read-only guard active? (planner/advisor/hunter) A write should be rejected:
 #   write: notes.txt -> Error: READ-ONLY PRESET: the write tool is disabled ...
@@ -152,7 +155,7 @@ preset, install against a DSH build you control and verify (see Installation).
 If you need a reproducible deployment, note the exact DSH version you tested
 against: the `discipline-guard` plugin hooks `tools/pre-execute` and keys its
 oscillation rings on `exec.agent`, and the `read-only-guard` plugin hooks
-`tools/pre-execute` keyed on tool names — surfaces DSH could reshape.
+`tools/pre-execute` keyed on tool names (`write`/`edit`/`bash`/`pwsh`) — surfaces DSH could reshape.
 
 ## License & credits
 

@@ -18,20 +18,21 @@ from opencode-agents) plus a deterministic discipline-guard plugin per preset.
 
 3. Copy the eight preset directories into `<dsh-home>/.agent-presets/`:
 
-   - **PowerShell:** run `.\install.ps1` from the repo root (it does this for
-     you). Or manually:
+    - **PowerShell:** run `.\install.ps1` from the repo root (it does this for
+      you, with backup + retention). Or manually:
 
-     ```powershell
-     New-Item -ItemType Directory -Force "$HOME\.dsh\.agent-presets" | Out-Null
-     Copy-Item -Recurse presets\planner, presets\builder, presets\surgeon, presets\advisor, presets\design, presets\scribe, presets\tester, presets\hunter "$HOME\.dsh\.agent-presets\"
-     ```
+      ```powershell
+      New-Item -ItemType Directory -Force "$HOME\.dsh\.agent-presets" | Out-Null
+      Copy-Item -Recurse presets\planner, presets\builder, presets\surgeon, presets\advisor, presets\design, presets\scribe, presets\tester, presets\hunter "$HOME\.dsh\.agent-presets\"
+      ```
 
-   - **bash (macOS/Linux):**
+    - **bash (macOS/Linux):** run `./install.sh` from the repo root (backup +
+      retention, like `install.ps1`). Or manually:
 
-     ```bash
-     mkdir -p "$HOME/.dsh/.agent-presets"
-     cp -r presets/planner presets/builder presets/surgeon presets/advisor presets/design presets/scribe presets/tester presets/hunter "$HOME/.dsh/.agent-presets/"
-     ```
+      ```bash
+      mkdir -p "$HOME/.dsh/.agent-presets"
+      cp -r presets/planner presets/builder presets/surgeon presets/advisor presets/design presets/scribe presets/tester presets/hunter "$HOME/.dsh/.agent-presets/"
+      ```
 
 4. Restart dsh (or open a new session). The presets appear in the preset
    picker as:
@@ -53,7 +54,7 @@ from opencode-agents) plus a deterministic discipline-guard plugin per preset.
 
 ## Notes
 
-- Existing presets with the same ids in `.agent-presets/` are preserved: `install.ps1` moves the previous version to `<dest>/_backup/<timestamp>/<preset>` before installing the fresh copy, so a broken install can be reverted. Repeated installs keep only the newest backup stamps (`.\install.ps1 -KeepBackups N`, default 5; older stamps are pruned). Manual copies (`cp`/`Copy-Item`) overwrite or merge instead and keep no backup — prefer `install.ps1`.
+- Existing presets with the same ids in `.agent-presets/` are preserved: `install.ps1` / `install.sh` move the previous version to `<dest>/_backup/<timestamp>/<preset>` before installing the fresh copy, so a broken install can be reverted. Repeated installs keep only the newest backup stamps (`.\install.ps1 -KeepBackups N` / `KEEP_BACKUPS=N ./install.sh`, default 5; older stamps are pruned). Manual copies (`cp`/`Copy-Item`) overwrite or merge instead and keep no backup — prefer the install scripts.
 - The presets reference their plugin files via relative rows
   (`./plugins/discipline-guard.js`, and `./plugins/read-only-guard.js` in
   planner/advisor/hunter), so each preset directory is self-contained and can

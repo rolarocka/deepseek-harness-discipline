@@ -157,7 +157,9 @@ touches all `presets/<id>` trees at once.
 
 ### Tested against
 
-`@deepseek-ai/dsh@0.1.0-rc.7` (all `dsh-*` packages at `0.1.0-rc.7`); npm-wrapped
-checkout, so no git commit hash is available. Recorded **2026-08-20**: the eight
-presets and the hardened `discipline-guard` plugin mount successfully in this
-release.
+`@deepseek-ai/dsh@0.1.1-rc.2` (every `dsh-*` package at `0.1.1-rc.2`, the
+current npm latest); npm-wrapped checkout, so no git commit hash is available.
+Recorded **2026-08-22**: the eight presets, the hardened `discipline-guard`
+plugin and the new `read-only-guard` plugin install cleanly in this release
+(consistency guard and unit tests green; live in-session guard spot checks
+pending).
