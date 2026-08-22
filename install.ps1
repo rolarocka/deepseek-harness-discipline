@@ -8,13 +8,15 @@
 # the picker. Existing presets with the same id are NOT deleted — the previous
 # version is preserved under <dest>/_backup/<timestamp>/<preset> before the
 # fresh copy is installed, so a broken install can always be reverted. Only
-# the newest $KeepBackups backup stamps are kept; older stamps are pruned so
-# repeated installs do not grow _backup without bound.
+# the newest $KeepBackups backup stamps are kept (minimum 1); older stamps are
+# pruned so repeated installs do not grow _backup without bound. Stamps carry
+# milliseconds, so two installs within the same second never collide.
 # NOTE: this file is intentionally ASCII-only so it parses in every
 # PowerShell version regardless of BOM handling.
 
 param(
   [string]$DshHome = $(if ($env:DSH_HOME) { $env:DSH_HOME } else { Join-Path $HOME ".dsh" }),
+  [ValidateRange(1, 99)]
   [int]$KeepBackups = 5
 )
 
@@ -38,7 +40,10 @@ foreach ($preset in "planner", "builder", "surgeon", "advisor", "design", "scrib
   # dir must be gone (or moved) first, otherwise Copy-Item -Recurse would nest
   # the source as a child ($to\$preset).
   if (Test-Path $to) {
-    $stamp = Get-Date -Format "yyyyMMdd-HHmmss"
+    # Milliseconds in the stamp: two installs within the same second must not
+    # race on the same backup directory (Move-Item would throw on an existing
+    # destination).
+    $stamp = Get-Date -Format "yyyyMMdd-HHmmss-fff"
     $bak = Join-Path (Join-Path $dest "_backup") (Join-Path $stamp $preset)
     New-Item -ItemType Directory -Force (Split-Path -Parent $bak) | Out-Null
     Move-Item -Path $to -Destination $bak
@@ -49,9 +54,10 @@ foreach ($preset in "planner", "builder", "surgeon", "advisor", "design", "scrib
   Write-Host "installed $preset -> $to"
 }
 
-# Retention: keep only the newest $KeepBackups backup stamps. Stamp names are
-# "yyyyMMdd-HHmmss", so lexical order equals chronological order. Pruning runs
-# after the install so the fresh backup from this run is always among the
+# Retention: keep only the newest $KeepBackups backup stamps (minimum 1, so
+# the fresh backup from this run always survives). Stamp names are
+# "yyyyMMdd-HHmmss-fff", so lexical order equals chronological order. Pruning
+# runs after the install so the fresh backup from this run is always among the
 # kept ones.
 $bakRoot = Join-Path $dest "_backup"
 if (Test-Path $bakRoot) {

@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { canonical, isOscillating, OSC_WINDOW, PARTIAL_WINDOW_LINES, isPartialRead } from '../presets/builder/plugins/discipline-guard.js'
+import { canonical, isOscillating, recordCall, unrecordCall, OSC_WINDOW, PARTIAL_WINDOW_LINES, isPartialRead, name as guardName, apply as guardApply } from '../presets/builder/plugins/discipline-guard.js'
+import { DENIED_TOOLS, isDeniedTool, name as roName, apply as roApply } from '../presets/planner/plugins/read-only-guard.js'
 
 test('canonical: primitives are JSON-represented', () => {
   assert.equal(canonical('read file.txt'), '"read file.txt"')
@@ -61,7 +62,7 @@ test('isPartialRead: bounded numeric limit within cap is partial', () => {
 
 test('isPartialRead: missing or oversized limit is a full read', () => {
   assert.equal(isPartialRead({}), false) // plain full read
-  assert.equal(isPartialRead({ offset: 5 }), false) // offset alone reads to EOF
+  assert.equal(isPartialRead({ offset: 5 }), false) // offset alone still covers whole-file scale (host caps apply)
   assert.equal(isPartialRead({ limit: PARTIAL_WINDOW_LINES + 1 }), false) // oversized window
   assert.equal(isPartialRead({ limit: 0 }), false)
   assert.equal(isPartialRead({ limit: '200' }), false) // non-numeric limit
@@ -69,23 +70,121 @@ test('isPartialRead: missing or oversized limit is a full read', () => {
   assert.equal(isPartialRead(undefined), false)
 })
 
-// Integration-style: replay the plugin's ring logic (push + shift + test on
-// each step) to confirm the breaker trips exactly at the 5th call of A,B,A,B,A.
+test('unrecordCall: removes one equal entry, tolerates a missing entry', () => {
+  const ring = ['A', 'B', 'A']
+  unrecordCall(ring, 'A') // removes the LAST equal entry
+  assert.deepEqual(ring, ['A', 'B'])
+  unrecordCall(ring, 'Z') // no-op
+  assert.deepEqual(ring, ['A', 'B'])
+})
+
+// Integration-style: replay the plugin's ring logic (recordCall + pop-on-deny)
+// to confirm the breaker trips exactly at the 5th call of A,B,A,B,A, that a
+// denied call is not recorded (identical retry denies again — hard stop), and
+// that a genuinely different call unblocks.
 test('ring mechanics: oscillation detected on the 5th call, then clears', () => {
   const ring = []
-  const pushSig = (s) => {
-    ring.push(s)
-    if (ring.length > OSC_WINDOW) ring.shift()
-    return isOscillating(ring)
-  }
+  const pushSig = (s) => recordCall(ring, s)
   // oscillating A,B,A,B,A
   assert.equal(pushSig('A'), false)
   assert.equal(pushSig('B'), false)
   assert.equal(pushSig('A'), false)
   assert.equal(pushSig('B'), false)
   assert.equal(pushSig('A'), true) // 5th -> deny
+  // the deny pops the signature: the ring is back to A,B,A,B, so an identical
+  // retry lands on the same pattern and denies again (no phase-shift escape)
+  ring.pop()
+  assert.equal(pushSig('A'), true)
   // after the deny the agent must change ONE variable; a genuinely different
   // call slides the ring forward and unblocks.
   assert.equal(pushSig('X'), false)
   assert.equal(pushSig('Y'), false)
+})
+
+test('recordCall: trims the ring to OSC_WINDOW', () => {
+  const ring = []
+  for (let i = 0; i < OSC_WINDOW + 3; i++) recordCall(ring, 'S' + i)
+  assert.equal(ring.length, OSC_WINDOW)
+  assert.equal(ring[0], 'S3') // oldest trimmed entries are gone
+})
+
+// read-only-guard: the mutating fs tools are denied deterministically.
+test('isDeniedTool: write and edit are denied; reads, shell and unknown are not', () => {
+  assert.equal(isDeniedTool('write'), true)
+  assert.equal(isDeniedTool('edit'), true)
+  assert.equal(isDeniedTool('read'), false)
+  assert.equal(isDeniedTool('read_image'), false)
+  assert.equal(isDeniedTool('bash'), false)
+  assert.equal(isDeniedTool(undefined), false)
+})
+
+test('DENIED_TOOLS: exactly the mutating fs tools from dsh-tool-fs', () => {
+  assert.deepEqual(DENIED_TOOLS, ['write', 'edit'])
+})
+
+// --- apply() wiring: exercise the real plugin through a fake ctx so the
+// hard-stop pop and the deny paths are tested, not hand-simulated.
+
+function fakeCtx({ fs } = {}) {
+  const handlers = {}
+  return {
+    ctx: {
+      get: (key) => (key === 'fs' ? fs : undefined),
+      on: (event, handler) => { handlers[event] = handler },
+    },
+    handlers,
+  }
+}
+
+const NEXT = async () => 'allowed'
+// One shared agent object: the breaker keys its ring on `exec.agent` identity
+// (WeakMap), so a sequence of calls must carry the SAME agent to accumulate
+// history — a fresh object per call would silently disable the breaker.
+const AGENT = {}
+const execOf = (name, args) => ({ name, arguments: args, agent: AGENT })
+
+test('discipline-guard apply(): identical retry after an oscillation deny denies again (hard stop)', async () => {
+  const { ctx, handlers } = fakeCtx({ fs: {} })
+  guardApply(ctx)
+  const preExecute = handlers["tools/pre-execute"]
+  assert.equal(typeof preExecute, 'function')
+  const callA = () => preExecute(execOf('bash', { command: 'a' }), NEXT)
+  const callB = () => preExecute(execOf('bash', { command: 'b' }), NEXT)
+  assert.equal(await callA(), 'allowed')
+  assert.equal(await callB(), 'allowed')
+  assert.equal(await callA(), 'allowed')
+  assert.equal(await callB(), 'allowed')
+  const denied = await callA()
+  assert.equal(denied.kind, 'deny')
+  // the deny is not recorded: the identical retry re-forms A,B,A,B,A
+  const retry = await callA()
+  assert.equal(retry.kind, 'deny')
+  // changing ONE variable unblocks
+  assert.equal(await preExecute(execOf('bash', { command: 'c' }), NEXT), 'allowed')
+})
+
+test('discipline-guard apply(): full read of a >25 KB file is denied with window guidance', async () => {
+  const fs = { resolve: async () => ({}), stat: async () => ({ size: 120 * 1024 }) }
+  const { ctx, handlers } = fakeCtx({ fs })
+  guardApply(ctx)
+  const preExecute = handlers["tools/pre-execute"]
+  const denied = await preExecute(execOf('read', { file_path: 'big.txt' }), NEXT)
+  assert.equal(denied.kind, 'deny')
+  assert.match(denied.reason, /120 KB/)
+  assert.match(denied.reason, /offset\/limit/)
+  // bounded windows pass through to the host
+  assert.equal(await preExecute(execOf('read', { file_path: 'big.txt', offset: 1, limit: PARTIAL_WINDOW_LINES }), NEXT), 'allowed')
+})
+
+test('read-only-guard apply(): write and edit are denied, read passes through', async () => {
+  const { ctx, handlers } = fakeCtx()
+  roApply(ctx)
+  const preExecute = handlers["tools/pre-execute"]
+  assert.equal(roName, 'read-only-guard')
+  const w = await preExecute(execOf('write', { file_path: 'x.txt', content: 'hi' }), NEXT)
+  assert.equal(w.kind, 'deny')
+  assert.match(w.reason, /READ-ONLY PRESET/)
+  const e = await preExecute(execOf('edit', { file_path: 'x.txt', old_string: 'a', new_string: 'b' }), NEXT)
+  assert.equal(e.kind, 'deny')
+  assert.equal(await preExecute(execOf('read', { file_path: 'x.txt' }), NEXT), 'allowed')
 })

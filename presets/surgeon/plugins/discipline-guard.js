@@ -16,18 +16,24 @@
 // The relative specifier resolves against the preset directory, so the file
 // travels with the preset (see dsh-agent-presets PresetTree.import()).
 //
-// The pure helpers (`canonical`, `isOscillating`, `isPartialRead`) are
-// exported and unit-tested in test/discipline-guard.test.mjs; `apply` keeps the DSH-facing wiring. The
-// oscillation breaker keys rings per-agent via a WeakMap; if `exec.agent` is
-// ever missing (a DSH contract we do not pin to), it falls back to a shared
-// ring and logs a warning FIRST time instead of silently sleeping.
+// The pure helpers (`canonical`, `isOscillating`, `isPartialRead`,
+// `recordCall`) are exported and unit-tested in test/discipline-guard.test.mjs;
+// `apply` keeps the DSH-facing wiring. The oscillation breaker keys rings
+// per-agent via a WeakMap; if `exec.agent` is ever missing (a DSH contract we
+// do not pin to), it falls back to a shared ring and logs a warning FIRST
+// time instead of silently sleeping. A DENIED call is not recorded as
+// history: its signature is popped again, so an identical retry lands on the
+// same ring and denies again (hard stop) instead of shifting the phase and
+// letting the cycle resume.
 
 export const OSC_WINDOW = 5; // A,B,A,B denies the 5th call
 const LARGE_READ_BYTES = 25600; // mirrors plugins/token-optimizer.js
 // A "partial window" is a bounded slice: a numeric limit no larger than this
-// many lines. offset alone (limit missing) reads to EOF, and a limit above
-// the cap is a full read in disguise — both are treated as full reads by the
-// large-read guard.
+// many lines. On DSH (verified against dsh-tool-fs 0.1.0-rc.7) a read without
+// a limit defaults to the host cap of 2000 lines with a ~50 KB response cap,
+// so an offset-only read or an oversized limit does not reach EOF — but it
+// still covers whole-file scale whenever the file fits under those host caps.
+// The large-read guard therefore treats all three as full reads.
 export const PARTIAL_WINDOW_LINES = 500;
 
 // Deep key-sort canonicalization so identical calls with reordered argument
@@ -46,6 +52,27 @@ export function isOscillating(ring) {
   if (!Array.isArray(ring) || ring.length !== OSC_WINDOW) return false
   const [s1, s2, s3, s4, s5] = ring
   return s1 === s3 && s3 === s5 && s2 === s4 && s1 !== s2
+}
+
+// Ring update for one observed call: push the signature, trim the ring to
+// OSC_WINDOW, and report whether the ring now spells an oscillation. Mutates
+// `ring` only; otherwise pure. On deny the caller unrecords the signature
+// again, so the denied call never becomes history.
+export function recordCall(ring, sig) {
+  ring.push(sig)
+  if (ring.length > OSC_WINDOW) ring.shift()
+  return isOscillating(ring)
+}
+
+// Inverse of recordCall for the deny paths: remove ONE entry equal to `sig`.
+// The oscillation deny is synchronous after its push, so pop() would be exact
+// there — but the large-read deny decides only after two awaits, and a
+// concurrent pre-execute for the same agent may have pushed/shifted in
+// between. Removing by value keeps the ring a correct multiset even then.
+// Pure otherwise; a missing entry is a no-op.
+export function unrecordCall(ring, sig) {
+  const idx = ring.lastIndexOf(sig)
+  if (idx !== -1) ring.splice(idx, 1)
 }
 
 // True when the read arguments describe a bounded partial window: a finite,
@@ -75,7 +102,7 @@ function apply(ctx) {
         '- VERIFY SIDE EFFECTS: after file/command changes, run a separate check before claiming success; report actual failures.',
         '- QUALITY GATE: after changes, run the project test/lint/build; discover the exact command, do not guess.',
         '- COMMIT GATE: never commit/push/tag without an explicit user ask.',
-        '- LARGE READS: files over 25 KB are read with the read tool as offset/limit partial windows (up to 500 lines each), never as one full read.',
+        '- LARGE READS: files over 25 KB are read with the read tool as offset/limit partial windows (up to 500 lines per call), never at whole-file scale in one call.',
         '- LAYERED RECALL: memory/docs results capped at ~3-5, <=1.5 KB, name the source.',
         '- TERSELY: short answers (<4 lines unless detail is requested); no preamble/postamble.',
         '- CIRCUIT BREAKER: if a guard denied a call, change ONE variable or stop and ask; never retry the identical call.',
@@ -114,9 +141,11 @@ function apply(ctx) {
       }
     }
     const sig = exec.name + ' ' + canonical(exec.arguments)
-    ring.push(sig)
-    if (ring.length > OSC_WINDOW) ring.shift()
-    if (isOscillating(ring)) {
+    if (recordCall(ring, sig)) {
+      // Denied calls are not history: unrecord the signature so an identical
+      // retry lands on the same A,B,A,B ring and denies again (hard stop)
+      // instead of shifting the phase and letting the cycle resume.
+      unrecordCall(ring, sig)
       return {
         kind: 'deny',
         reason: 'CIRCUIT BREAKER: oscillating between "' + exec.name + '" and the previous call (' + OSC_WINDOW + '-call cycle). Change ONE variable or stop and ask the user; do not repeat the cycle.',
@@ -148,9 +177,13 @@ function apply(ctx) {
     // strictly "over 25 KB": a file of exactly LARGE_READ_BYTES passes.
     if (info === undefined || typeof info.size !== 'number' || info.size <= LARGE_READ_BYTES) return next()
     const kb = Math.round(info.size / 1024)
+    // Same policy as the breaker: a denied read is not recorded as history.
+    // unrecordCall (not pop): the two awaits above let a concurrent call for
+    // the same agent mutate the ring in between.
+    unrecordCall(ring, sig)
     return {
       kind: 'deny',
-      reason: raw + ' is ' + kb + ' KB. Use the read tool with offset/limit partial windows (line-numbered, up to ' + PARTIAL_WINDOW_LINES + ' lines each) instead of one full read.',
+      reason: raw + ' is ' + kb + ' KB. Read it in bounded partial windows: offset/limit with up to ' + PARTIAL_WINDOW_LINES + ' lines per call, not one call at whole-file scale.',
     }
   })
 }

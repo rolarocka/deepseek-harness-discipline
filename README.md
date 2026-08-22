@@ -14,7 +14,7 @@ See [CHANGELOG](CHANGELOG.md) for a full history of changes.
 |---|---|
 | Personas (plan, build, surgical, advisor, design, scribe, tester, hunter) | 8 DSH agent presets (`presets/<id>/agent.cordis.yml`) |
 | 30 universal rules in the persona prompt | The same 32 rules in every persona |
-| `permission: {edit: deny, bash: deny}` (plan/advisor) | Read-only presets without shell-tool rows |
+| `permission: {edit: deny, bash: deny}` (plan/advisor) | Read-only presets: no shell-tool rows + `read-only-guard` denies `write`/`edit` deterministically |
 | `plugins/token-optimizer.js` (large-read redirect) | `presets/*/plugins/discipline-guard.js` |
 | Rule 30 (CIRCUIT BREAKER, loop detection) | Oscillation guard in the same plugin |
 
@@ -41,13 +41,28 @@ The plugin `plugins/discipline-guard.js` is mounted by a relative row
 (`name: './plugins/discipline-guard.js'`) and travels with the preset. It is
 deterministic — no LLM judgment:
 
-- **Large-read guard:** a `read` without `offset`/`limit` on files larger than
-  25 KB is rejected with partial-window guidance (ported from
-  token-optimizer.js).
+- **Large-read guard:** a `read` at whole-file scale (no `limit`, an
+  offset-only read, or a limit above 500 lines) of a file larger than 25 KB is
+  rejected with partial-window guidance (ported from token-optimizer.js).
 - **Oscillation circuit breaker:** the pattern A→B→A→B→A is rejected on the
-  5th call (rule 30). Complements the host-wide `dsh-repeat-tool-reminder`
-  (consecutive identical calls only).
+  5th call, and the denied call is not recorded — an identical retry denies
+  again (hard stop) instead of shifting the cycle's phase. The breaker resumes
+  only after a genuinely different call (rule 30). Complements the host-wide
+  `dsh-repeat-tool-reminder` (consecutive identical calls only).
 - **Discipline prompt section:** always-on short rules in the system prompt.
+
+## Read-only Guard (planner / advisor / hunter)
+
+DSH's `@deepseek-ai/dsh-tool-fs` registers the full `read`/`write`/`edit`
+suite unconditionally — there is no row-level opt-out, so "read-only" cannot
+be enforced by omitting rows without also losing `read`. The preset-local
+plugin `plugins/read-only-guard.js` (mounted only in the three read-only
+presets) restores the enforcement half that opencode-agents carried as
+`permission: {edit: deny}`: every `write`/`edit` call is denied
+deterministically on `tools/pre-execute`, with an always-on prompt card
+stating the policy. Shell tools are already absent from those compositions.
+The consistency guard verifies the plugin exists exactly there, is
+byte-identical across the three copies, and is mounted in no shell preset.
 
 ## Installation
 
@@ -96,6 +111,9 @@ Get-ChildItem "$HOME\.dsh\.agent-presets" -Directory
 
 # Guard active? A full read of a file larger than 25 KB should be rejected:
 #   read: CHANGELOG.md (without offset/limit) -> Error: ... is 120 KB. Use offset/limit ...
+#
+# Read-only guard active? (planner/advisor/hunter) A write should be rejected:
+#   write: notes.txt -> Error: READ-ONLY PRESET: the write tool is disabled ...
 ```
 
 ## Preset consistency
@@ -110,10 +128,13 @@ node shared/check-consistency.mjs   # exit 1 (loudly, with file + line) on drift
 ```
 
 It verifies the 32 rules and the persona header are byte-identical across all
-eight presets, that both shell rows (`tool-bash` **and** `tool-pwsh`) are
-present in the five shell presets and absent (read-only) in
-planner/advisor/hunter, and that all eight copies of
-`plugins/discipline-guard.js` are byte-identical. It runs in CI
+eight presets, that each rules block is structurally intact (exactly rules
+1..32, sequentially numbered), that both shell rows (`tool-bash` **and**
+`tool-pwsh`) are present in the five shell presets and absent (read-only) in
+planner/advisor/hunter, that all eight copies of `plugins/discipline-guard.js`
+are byte-identical, and that `plugins/read-only-guard.js` exists in exactly
+the three read-only presets (byte-identical there) with its mount row present
+there and absent in the shell presets. It runs in CI
 (`.github/workflows/consistency.yml`) and, once installed, before every commit:
 
 ```bash
@@ -128,7 +149,8 @@ so this repo does not promise a specific DSH release. Before relying on a
 preset, install against a DSH build you control and verify (see Installation).
 If you need a reproducible deployment, note the exact DSH version you tested
 against: the `discipline-guard` plugin hooks `tools/pre-execute` and keys its
-oscillation rings on `exec.agent`, both surfaces DSH could reshape.
+oscillation rings on `exec.agent`, and the `read-only-guard` plugin hooks
+`tools/pre-execute` keyed on tool names — surfaces DSH could reshape.
 
 ## License & credits
 

@@ -293,3 +293,13 @@
 # plugin file travels with the preset. No service published -> no realm needed.
 - id: discipline-guard
   name: './plugins/discipline-guard.js'
+
+# ── read-only guard ──────────────────────────────────────────────────────────
+
+# Deterministic enforcement of the read-only persona: @deepseek-ai/dsh-tool-fs
+# registers write/edit unconditionally (no row-level opt-out), so this plugin
+# denies both on tools/pre-execute. Restores the `permission: {edit: deny}`
+# enforcement half from the opencode-agents source, which dropping the shell
+# rows alone did not cover.
+- id: read-only-guard
+  name: './plugins/read-only-guard.js'

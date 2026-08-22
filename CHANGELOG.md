@@ -9,6 +9,67 @@ The eight presets are intentional per-directory copies (self-contained install;
 the `discipline-guard.js` plugin "travels with the preset"), so an entry often
 touches all `presets/<id>` trees at once.
 
+## [Unreleased] — 2026-08-22
+
+### Added
+
+- **Read-only Guard** — new preset-local plugin `plugins/read-only-guard.js`,
+  mounted in exactly the three read-only presets (`planner`, `advisor`,
+  `hunter`). DSH's `@deepseek-ai/dsh-tool-fs` registers the full
+  `read`/`write`/`edit` suite unconditionally (verified against the
+  `dsh-tool-fs@0.1.0-rc.7` package source), so dropping the shell rows alone
+  left `write`/`edit` in those agents' tool catalogs with only the persona
+  prompt as a fence. The guard denies both tools deterministically on
+  `tools/pre-execute` and adds an always-on prompt card — restoring the
+  enforcement half of opencode-agents' `permission: {edit: deny}`.
+  `shared/check-consistency.mjs` now also verifies the file exists in exactly
+  the read-only presets, is byte-identical across them, and that its mount row
+  is present there and absent in the shell presets.
+
+### Changed
+
+- **Oscillation breaker is a hard stop** — a denied call's signature is
+  removed from the ring again (new exported, unit-tested helpers `recordCall`
+  and `unrecordCall`), so an identical retry lands on the same A,B,A,B ring
+  and denies again instead of shifting the cycle's phase and resuming it.
+  Denied reads no longer pollute the ring either. The deny paths remove by
+  value (`unrecordCall`), not by position: the large-read deny decides after
+  two awaits, and a concurrent call for the same agent may have mutated the
+  ring in between.
+- **Large-read guard wording matches DSH reality** — the old comment claimed
+  an offset-only read "reads to EOF"; actually dsh-tool-fs defaults `limit` to
+  its host cap (2000 lines, ~50 KB response cap). The comment and the deny
+  message now describe whole-file-scale reads accurately; guard behavior is
+  unchanged (still conservative).
+- **Consistency guard asserts rule-block structure** — each rules block must
+  contain exactly rules 1..32, sequentially numbered. This catches uniform
+  insertions/deletions applied identically to all eight presets, which the
+  majority comparison cannot see. Remaining blind spot documented in the
+  script header: identical content edits across all copies still pass.
+- **Consistency guard rejects duplicate mount rows** — every `- id:` within a
+  preset file must be unique; a duplicated row mounts a component twice (the
+  exact bug an install-repair briefly introduced in `hunter`). Row-match
+  regexes are now end-anchored, so `- id: tool-bash-x` can no longer satisfy
+  a `tool-bash` check.
+- **Tests exercise the real plugin wiring** — new fake-ctx harness drives
+  `apply()` directly: the hard stop on identical retries, the large-read deny
+  with window guidance, and the read-only guard's write/edit denies are all
+  proven through the registered `tools/pre-execute` handler, not
+  hand-simulated. The harness also documents that rings key on `exec.agent`
+  identity: a fresh agent object per call silently disables the breaker.
+- **CI runs the unit tests** — the workflow now executes `npm test` alongside
+  the consistency check.
+
+### Fixed
+
+- **`install.ps1` same-second collision** — backup stamps now carry
+  milliseconds (`yyyyMMdd-HHmmss-fff`), so two installs within one second no
+  longer race on the same backup directory. `-KeepBackups` is validated to
+  1..99 (0 would have pruned the fresh backup too).
+- **CI least privilege** — the workflow sets `permissions: contents: read`.
+- **CHANGELOG drift** — the unit-test bullet dropped its brittle exact case
+  count (said "10 cases" while the suite had grown).
+
 ## [Unreleased] — 2026-08-20
 
 ### Added
@@ -44,9 +105,10 @@ touches all `presets/<id>` trees at once.
   (`hooks/pre-commit`, enabled via `git config core.hooksPath hooks`). Uses a
   majority reference so an edit to *any* single preset — including `builder` —
   is caught, and reports file + line on failure.
-- **Unit tests for the guard** — `test/discipline-guard.test.mjs` (10 cases,
-  `node:test`, no framework) covering the canonicalizer, the oscillation
-  detector, and the ring mechanics. `npm test`, `npm run check`, and
+- **Unit tests for the guard** — `test/discipline-guard.test.mjs`
+  (`node:test`, no framework) covering the canonicalizer, the oscillation
+  detector, the ring mechanics, and (since 2026-08-22) the read-only guard's
+  deny list. `npm test`, `npm run check`, and
   `npm run test:all` scripts added.
 - **DSH compatibility note** — README documents that the presets reference
   `@deepseek-ai/dsh-*` by bare id (no runtime version pin) and recommends

@@ -47,15 +47,17 @@ from opencode-agents) plus a deterministic discipline-guard plugin per preset.
 
 5. Verify: start a session on any preset and try a full `read` of a file
    larger than 25 KB without `offset`/`limit` — it is rejected with guidance
-   (discipline guard active). The 32 universal rules are embedded in every
-   persona.
+   (discipline guard active). On planner, advisor or hunter, a `write` or
+   `edit` attempt is rejected with a READ-ONLY PRESET message (read-only
+   guard active). The 32 universal rules are embedded in every persona.
 
 ## Notes
 
 - Existing presets with the same ids in `.agent-presets/` are preserved: `install.ps1` moves the previous version to `<dest>/_backup/<timestamp>/<preset>` before installing the fresh copy, so a broken install can be reverted. Repeated installs keep only the newest backup stamps (`.\install.ps1 -KeepBackups N`, default 5; older stamps are pruned). Manual copies (`cp`/`Copy-Item`) overwrite or merge instead and keep no backup — prefer `install.ps1`.
-- The presets reference the plugin file via a relative row
-  (`./plugins/discipline-guard.js`), so each preset directory is self-contained
-  and can be copied as a whole.
+- The presets reference their plugin files via relative rows
+  (`./plugins/discipline-guard.js`, and `./plugins/read-only-guard.js` in
+  planner/advisor/hunter), so each preset directory is self-contained and can
+  be copied as a whole.
 - Requires a DSH deployment that ships the `standard` preset row set
   (`@deepseek-ai/dsh-*` packages, `dsh-persona`, `dsh-tool-fs`, etc.).
 - DSH is in active preview; cordis realm mechanics and service names can change
