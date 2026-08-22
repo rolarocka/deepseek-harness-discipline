@@ -17,14 +17,15 @@
 // travels with the preset (see dsh-agent-presets PresetTree.import()).
 //
 // The pure helpers (`canonical`, `isOscillating`, `isPartialRead`,
-// `recordCall`) are exported and unit-tested in test/discipline-guard.test.mjs;
-// `apply` keeps the DSH-facing wiring. The oscillation breaker keys rings
-// per-agent via a WeakMap; if `exec.agent` is ever missing (a DSH contract we
-// do not pin to), it falls back to a shared ring and logs a warning FIRST
-// time instead of silently sleeping. A DENIED call is not recorded as
-// history: its signature is popped again, so an identical retry lands on the
-// same ring and denies again (hard stop) instead of shifting the phase and
-// letting the cycle resume.
+// `recordCall`, `unrecordCall`) are exported and unit-tested in
+// test/discipline-guard.test.mjs; `apply` keeps the DSH-facing wiring. The
+// oscillation breaker keys rings per-agent via a WeakMap; if `exec.agent` is
+// ever missing (a DSH contract we do not pin to), it falls back to a shared
+// ring and logs a warning FIRST time instead of silently sleeping. A DENIED
+// call is not recorded as history: its signature is removed again
+// (`unrecordCall`), so an identical retry lands on the same ring and denies
+// again (hard stop) instead of shifting the phase and letting the cycle
+// resume.
 
 export const OSC_WINDOW = 5; // A,B,A,B denies the 5th call
 const LARGE_READ_BYTES = 25600; // mirrors plugins/token-optimizer.js
@@ -43,7 +44,9 @@ export function canonical(value) {
   if (value !== null && typeof value === 'object') {
     return '{' + Object.keys(value).sort().map((k) => JSON.stringify(k) + ':' + canonical(value[k])).join(',') + '}'
   }
-  return JSON.stringify(value)
+  // JSON.stringify yields undefined (not a string) for undefined/function/
+  // symbol values; fall back to String() so a signature is always a string.
+  return JSON.stringify(value) ?? String(value)
 }
 
 // Deterministic oscillation test on a signature ring whose length is exactly

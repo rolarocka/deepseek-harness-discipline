@@ -50,7 +50,14 @@ const READ_ONLY_PRESETS = ['planner', 'advisor', 'hunter'];
 
 const PRESETS = [...SHELL_PRESETS, ...READ_ONLY_PRESETS];
 for (const id of PRESETS) {
-  if (!statSync(join(presetsDir, id, 'agent.cordis.yml')).isFile()) {
+  let st;
+  try {
+    st = statSync(join(presetsDir, id, 'agent.cordis.yml'));
+  } catch {
+    console.error(`MISSING preset file: presets/${id}/agent.cordis.yml`);
+    process.exit(2);
+  }
+  if (!st.isFile()) {
     console.error(`MISSING preset file: presets/${id}/agent.cordis.yml`);
     process.exit(2);
   }

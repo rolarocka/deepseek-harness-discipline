@@ -13,6 +13,12 @@ test('canonical: null is distinguishable from undefined-less object gap', () => 
   assert.equal(canonical(null), 'null')
 })
 
+test('canonical: undefined/function/symbol still yield a string signature', () => {
+  assert.equal(canonical(undefined), 'undefined')
+  assert.equal(typeof canonical(() => 'x'), 'string')
+  assert.equal(canonical(Symbol('x')), 'Symbol(x)')
+})
+
 test('canonical: object keys are sorted, so key order does not matter', () => {
   const a = canonical({ b: 1, a: 2 })
   const b = canonical({ a: 2, b: 1 })

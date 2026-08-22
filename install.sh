@@ -11,7 +11,9 @@
 # fresh copy is installed, so a broken install can always be reverted. Only
 # the newest $KEEP_BACKUPS backup stamps are kept; older stamps are pruned so
 # repeated installs do not grow _backup without bound. Stamps carry
-# milliseconds, so two installs within the same second never collide.
+# milliseconds where the platform's date supports them; the backup path is
+# additionally bumped until free, so two installs within the same second
+# never collide on any platform.
 
 set -euo pipefail
 
@@ -40,7 +42,19 @@ for preset in planner builder surgeon advisor design scribe tester hunter; do
     exit 2
   fi
   if [[ -e "$to" ]]; then
-    stamp="$(date +"%Y%m%d-%H%M%S-%3N")"
+    # Millisecond fraction: GNU date supports %3N; BSD/macOS date does not and
+    # would emit a literal, collapsing resolution to whole seconds. Normalize
+    # to digits, then bump the fraction while the target exists so two
+    # installs in the same second can never nest one backup inside another.
+    ms="$(date +"%3N" 2>/dev/null || true)"
+    case "$ms" in ''|*[!0-9]*) ms=0 ;; esac
+    ms=$(( 10#$ms % 1000 ))
+    while :; do
+      stamp="$(date +"%Y%m%d-%H%M%S")-$(printf '%03d' "$ms")"
+      [[ -e "$DEST/_backup/$stamp/$preset" ]] || break
+      ms=$(( (ms + 1) % 1000 ))
+      if (( ms == 0 )); then sleep 1; fi
+    done
     bak="$DEST/_backup/$stamp/$preset"
     mkdir -p "$(dirname "$bak")"
     mv "$to" "$bak"

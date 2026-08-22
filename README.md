@@ -13,7 +13,7 @@ See [CHANGELOG](CHANGELOG.md) for a full history of changes.
 | opencode-agents (source) | deepseek-harness-discipline (port) |
 |---|---|
 | Personas (plan, build, surgical, advisor, design, scribe, tester, hunter) | 8 DSH agent presets (`presets/<id>/agent.cordis.yml`) |
-| 30 universal rules in the persona prompt | The same 32 rules in every persona |
+| 30 universal rules in the persona prompt | The same 30 plus 2 port additions (GATES LEDGER, REPORT AUDIT) — 32 in every persona |
 | `permission: {edit: deny, bash: deny}` (plan/advisor) | Read-only presets: no shell-tool rows + `read-only-guard` denies `write`/`edit`/`bash`/`pwsh` deterministically |
 | `plugins/token-optimizer.js` (large-read redirect) | `presets/*/plugins/discipline-guard.js` |
 | Rule 30 (CIRCUIT BREAKER, loop detection) | Oscillation guard in the same plugin |

@@ -11,7 +11,7 @@ its source repository [opencode-agents](https://github.com/rolarocka/opencode-ag
 - **Source:** https://github.com/rolarocka/opencode-agents
 - **License:** MIT, Copyright (c) 2026 rolarocka
 - **Used for:**
-  - the 30 universal rules embedded in every `presets/*/agent.cordis.yml`
+  - the 32 universal rules embedded in every `presets/*/agent.cordis.yml`
     persona (adapted, trimmed of OpenCode-specific mechanics such as
     `/caveman`, BrowserClaw and rtk);
   - the persona role texts for all 8 presets: plan, build, surgical, advisor,
