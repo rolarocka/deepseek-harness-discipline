@@ -95,13 +95,15 @@ roster is read at startup.
 curl -fsSL https://raw.githubusercontent.com/rolarocka/deepseek-harness-discipline/main/install.md | claude
 ```
 
-> **Tested against:** `@deepseek-ai/dsh@0.1.0-rc.7` (every `dsh-*` package at
-> `0.1.0-rc.7`), npm-wrapped checkout — no git commit hash is available for a
-> non-git install. Recorded **2026-08-20**: the eight presets and the hardened
-> `discipline-guard` plugin mount successfully in this release. Update this
-> line with the version/date whenever the presets are next verified, and check
-> the gap here first if a later DSH update breaks something. No version is
-> enforced at runtime; this is just a reference point.
+> **Tested against:** `@deepseek-ai/dsh@0.1.1-rc.2` (every `dsh-*` package at
+> `0.1.1-rc.2`, the current npm latest), npm-wrapped checkout — no git commit
+> hash is available for a non-git install. Recorded **2026-08-22**: the eight
+> presets, the hardened `discipline-guard` plugin and the new
+> `read-only-guard` plugin install cleanly in this release (consistency guard
+> and unit tests green; live in-session guard spot checks pending). Update
+> this line with the version/date whenever the presets are next verified,
+> and check the gap here first if a later DSH update breaks something. No
+> version is enforced at runtime; this is just a reference point.
 
 ## Verification
 

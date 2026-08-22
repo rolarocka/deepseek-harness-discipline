@@ -8,3 +8,9 @@ node_modules/
 
 # local tool cache (token-optimizer MCP)
 .token-optimizer/
+
+# local agent/harness session artifacts (not part of the preset pack)
+.commandcode/
+.reasonix/
+.mcp.json
+reasonix.toml
