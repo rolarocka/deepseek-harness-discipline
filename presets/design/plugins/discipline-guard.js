@@ -44,16 +44,25 @@ export function canonical(value) {
   if (value !== null && typeof value === 'object') {
     return '{' + Object.keys(value).sort().map((k) => JSON.stringify(k) + ':' + canonical(value[k])).join(',') + '}'
   }
+  if (typeof value === 'bigint') return String(value) + 'n'
   // JSON.stringify yields undefined (not a string) for undefined/function/
   // symbol values; fall back to String() so a signature is always a string.
   return JSON.stringify(value) ?? String(value)
 }
 
 // Deterministic oscillation test on a signature ring whose length is exactly
-// OSC_WINDOW: the ring spells A,B,A,B,A. Pure — no state here.
+// OSC_WINDOW: the ring spells A,B,A,B,A or the straight repeat A,A,A,A,A.
+// Pure — no state here.
 export function isOscillating(ring) {
   if (!Array.isArray(ring) || ring.length !== OSC_WINDOW) return false
   const [s1, s2, s3, s4, s5] = ring
+
+  // Straight repetition is the simplest stuck-loop pattern of all: the
+  // alternation check below requires s1 !== s2, so a pure repeat would never
+  // deny and could run forever.
+  if (s1 === s2 && s2 === s3 && s3 === s4 && s4 === s5) return true
+
+  // Strict 2-cycle alternation (A,B,A,B,A).
   return s1 === s3 && s3 === s5 && s2 === s4 && s1 !== s2
 }
 
@@ -111,6 +120,8 @@ function apply(ctx) {
         '- CIRCUIT BREAKER: if a guard denied a call, change ONE variable or stop and ask; never retry the identical call.',
         '- GATES LEDGER: before non-trivial work, write acceptance gates as "- [ ] G: ... CHECK: <command> EXPECT: <result>"; a checked box needs recorded evidence.',
         '- REPORT AUDIT: re-measure every number in the final report at report time; never copy numbers from earlier in the session.',
+        '- SURFACE ASSUMPTIONS: non-trivial task, state assumptions explicitly; multiple readings -> present them, do not pick silently; simpler approach -> say so and push back.',
+        '- SURGICAL DIFF: touch only what the task requires; no orthogonal improvements, no refactors of working code; clean up only orphans your own change created.',
       ].join('\n'),
     })
   }

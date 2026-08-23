@@ -68,12 +68,15 @@ done
 # Retention: keep only the newest $KEEP_BACKUPS backup stamps.
 bakRoot="$DEST/_backup"
 if [[ -d "$bakRoot" ]]; then
-  mapfile -t stale < <(ls -1 "$bakRoot" 2>/dev/null | sort -r | tail -n +"$((KEEP_BACKUPS + 1))")
-  for d in "${stale[@]}"; do
-    [[ -n "$d" ]] || continue
-    rm -rf "$bakRoot/$d"
-    echo "pruned old backup: $d"
-  done
+  # Plain pipeline, no mapfile/array-from-subshell: mapfile needs bash >= 4,
+  # stock macOS still ships bash 3.2. The while loop runs in a pipeline
+  # subshell, which is fine here — pruning only needs side effects.
+  ls -1 "$bakRoot" 2>/dev/null | sort -r | tail -n +"$((KEEP_BACKUPS + 1))" |
+    while IFS= read -r d; do
+      [[ -n "$d" ]] || continue
+      rm -rf "$bakRoot/$d"
+      echo "pruned old backup: $d"
+    done
 fi
 
 echo ""

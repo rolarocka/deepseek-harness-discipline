@@ -3,7 +3,6 @@
 // (itself ported from opencode-agents / token-optimizer-mcp, MIT — see
 // THIRD-PARTY-NOTICES.md). Differences from the 8-preset copies, by design:
 //   - no DENIED_TOOLS layer (this preset is write-enabled);
-//   - pure repetition (A,A,A,A,A) IS an oscillation;
 //   - calls without resolvable exec.agent are skipped, not pooled.
 
 export const OSC_WINDOW = 5;
@@ -15,6 +14,7 @@ export function canonical(value) {
   if (value !== null && typeof value === 'object') {
     return '{' + Object.keys(value).sort().map((k) => JSON.stringify(k) + ':' + canonical(value[k])).join(',') + '}';
   }
+  if (typeof value === 'bigint') return String(value) + 'n';
   return JSON.stringify(value) ?? String(value);
 }
 

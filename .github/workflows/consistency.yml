@@ -15,7 +15,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Verify the 8 presets have not drifted apart
+      - name: Verify preset consistency (8 discipline presets + local variants)
         run: node shared/check-consistency.mjs
       - name: Unit-test the guard plugins
         run: npm test

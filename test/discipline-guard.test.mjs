@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { canonical, isOscillating, recordCall, unrecordCall, OSC_WINDOW, PARTIAL_WINDOW_LINES, isPartialRead, name as guardName, apply as guardApply } from '../presets/builder/plugins/discipline-guard.js'
 import { DENIED_TOOLS, isDeniedTool, name as roName, apply as roApply } from '../presets/planner/plugins/read-only-guard.js'
+import { isOscillating as optIsOscillating } from '../presets/optimized/plugins/discipline-guard.js'
 
 test('canonical: primitives are JSON-represented', () => {
   assert.equal(canonical('read file.txt'), '"read file.txt"')
@@ -13,10 +14,11 @@ test('canonical: null is distinguishable from undefined-less object gap', () => 
   assert.equal(canonical(null), 'null')
 })
 
-test('canonical: undefined/function/symbol still yield a string signature', () => {
+test('canonical: undefined/function/symbol/bigint still yield a string signature', () => {
   assert.equal(canonical(undefined), 'undefined')
   assert.equal(typeof canonical(() => 'x'), 'string')
   assert.equal(canonical(Symbol('x')), 'Symbol(x)')
+  assert.equal(canonical(10n), '10n') // JSON.stringify would THROW on bigint
 })
 
 test('canonical: object keys are sorted, so key order does not matter', () => {
@@ -42,9 +44,17 @@ test('isOscillating: not oscillating when fewer than OSC_WINDOW sigs', () => {
   assert.equal(isOscillating([]), false)
 })
 
-test('isOscillating: repeated same call (A,A,A,A,A) is NOT oscillation', () => {
+test('isOscillating: repeated same call (A,A,A,A,A) is denied', () => {
   const ring = ['A', 'A', 'A', 'A', 'A']
-  assert.equal(isOscillating(ring), false)
+  assert.equal(isOscillating(ring), true)
+})
+
+// The 'optimized' fork shares the oscillation semantics (straight repeat and
+// alternation both trip); pinned here so the fork cannot silently regress.
+test('optimized fork isOscillating: straight repetition and alternation trip, near-miss does not', () => {
+  assert.equal(optIsOscillating(['S', 'S', 'S', 'S', 'S']), true)
+  assert.equal(optIsOscillating(['A', 'B', 'A', 'B', 'A']), true)
+  assert.equal(optIsOscillating(['A', 'A', 'A', 'A', 'B']), false)
 })
 
 test('isOscillating: half-pattern (A,B,B,B,A) is NOT oscillation', () => {

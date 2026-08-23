@@ -3,8 +3,9 @@
 Eight agent presets carrying the battle-tested discipline from
 [opencode-agents](https://github.com/rolarocka/opencode-agents) — ported to
 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (DSH)
-agent presets (`cordis.yml`) — plus a deterministic **Discipline Guard**
-plugin in every preset.
+agent presets (`cordis.yml`) — plus a user-authored local variant
+(`optimized`), and a deterministic **Discipline Guard** plugin in every
+preset.
 
 See [CHANGELOG](CHANGELOG.md) for a full history of changes.
 
@@ -13,7 +14,7 @@ See [CHANGELOG](CHANGELOG.md) for a full history of changes.
 | opencode-agents (source) | deepseek-harness-discipline (port) |
 |---|---|
 | Personas (plan, build, surgical, advisor, design, scribe, tester, hunter) | 8 DSH agent presets (`presets/<id>/agent.cordis.yml`) |
-| 30 universal rules in the persona prompt | The same 30 plus 2 port additions (GATES LEDGER, REPORT AUDIT) — 32 in every persona |
+| 30 universal rules in the persona prompt | The same 30 plus 4 port additions (GATES LEDGER, REPORT AUDIT, SURFACE ASSUMPTIONS, SURGICAL DIFF) — 34 in every discipline preset persona |
 | `permission: {edit: deny, bash: deny}` (plan/advisor) | Read-only presets: no shell-tool rows + `read-only-guard` denies `write`/`edit`/`bash`/`pwsh` deterministically |
 | `plugins/token-optimizer.js` (large-read redirect) | `presets/*/plugins/discipline-guard.js` |
 | Rule 30 (CIRCUIT BREAKER, loop detection) | Oscillation guard in the same plugin |
@@ -30,15 +31,16 @@ See [CHANGELOG](CHANGELOG.md) for a full history of changes.
 | `scribe` | Documentation-only — keeps docs truthful and in sync with the code, drift checks, changelog discipline | ✅ |
 | `tester` | Proactively closes test-coverage gaps with TDD — test files only, never production code | ✅ |
 | `hunter` | Read-only whole-codebase sweep for bug classes, dead code and quality-gate risks | ❌ |
-| `optimized` | User-authored local variant — Android/Gradle coding agent, own persona + condensed guard fork, platform-switched shell tools | ✅ |
+| `optimized` | User-authored local variant — Android/Gradle coding agent, own persona + condensed guard fork, both shell tools enabled (no `!!js` switching) | ✅ |
 
-The eight discipline presets embed the **32 universal rules** (VERIFY BEFORE
+The eight discipline presets embed the **34 universal rules** (VERIFY BEFORE
 CLAIMING, QUALITY GATE, COMMIT GATE, LAYERED RECALL, TERSELY, CALL-GRAPH
 REACHABILITY, CIRCUIT BREAKER, …) plus a role section.
 
-`optimized` ships verbatim as a user-authored local variant: its own
+`optimized` is a user-authored local variant: its own
 Android/Gradle-focused persona, a condensed guard fork (circuit breaker +
-large-read guard only) and platform-switched `tool-bash`/`tool-pwsh` rows.
+large-read guard only) and unconditional `tool-bash`/`tool-pwsh` rows (both
+enabled — no `!!js` platform switching).
 Both installers deploy it and the consistency script verifies its file
 presence, but it is deliberately outside the byte-identity contracts that
 bind the eight ported presets.
@@ -54,11 +56,12 @@ deterministic — no LLM judgment:
   rejected with partial-window guidance (ported from token-optimizer.js).
   Policy thresholds are **25 KB / 500 lines** — stricter than DSH's own caps
   (2000 lines / ~50 KB), so a windowed read is always bounded.
-- **Oscillation circuit breaker:** the pattern A→B→A→B→A is rejected on the
-  5th call, and the denied call is not recorded — an identical retry denies
-  again (hard stop) instead of shifting the cycle's phase. The breaker resumes
-  only after a genuinely different call (rule 30). Complements the host-wide
-  `dsh-repeat-tool-reminder` (consecutive identical calls only).
+- **Oscillation circuit breaker:** the patterns A→B→A→B→A and A→A→A→A→A are
+  rejected on the 5th call, and the denied call is not recorded — an identical
+  retry denies again (hard stop) instead of shifting the cycle's phase. The
+  breaker resumes only after a genuinely different call (rule 30). Goes
+  beyond the host-wide `dsh-repeat-tool-reminder` by denying instead of only
+  reminding, and by keying on canonicalized tool + arguments.
 - **Discipline prompt section:** always-on short rules in the system prompt.
 
 ## Read-only Guard (planner / advisor / hunter)
@@ -96,9 +99,9 @@ cd deepseek-harness-discipline
 
 Then **restart dsh** (or open a new session) and pick "Planner (Architect)",
 "Builder (TDD Implementation)", "Surgeon (Minimal Fixes)", "Advisor (Reviewer)",
-"Designer (UI/UX)", "Scribe (Docs)", "Tester (Coverage)" or "Hunter (Sweep)"
-in the preset picker. The presets only appear after a restart because the
-roster is read at startup.
+"Designer (UI/UX)", "Scribe (Docs)", "Tester (Coverage)", "Hunter (Sweep)" or
+the local variant "Optimized" in the preset picker. The presets only appear
+after a restart because the roster is read at startup.
 
 ### Install with AI (one-liner)
 
@@ -123,7 +126,7 @@ curl -fsSL https://raw.githubusercontent.com/rolarocka/deepseek-harness-discipli
 Get-ChildItem "$HOME\.dsh\.agent-presets" -Directory
 
 # Guard active? Create a file larger than 25 KB and try a full read:
-#   read: <path-to->large-file.txt (without offset/limit) -> Error: ... is 28 KB. Read it in bounded partial windows: ...
+#   read: <path-to-a-large-file.txt> (without offset/limit) -> Error: ... is 28 KB. Read it in bounded partial windows: ...
 #
 # Read-only guard active? (planner/advisor/hunter) A write should be rejected:
 #   write: notes.txt -> Error: READ-ONLY PRESET: the write tool is disabled ...
@@ -131,7 +134,7 @@ Get-ChildItem "$HOME\.dsh\.agent-presets" -Directory
 
 ## Preset consistency
 
-The 32 universal rules, the persona header and the shell-tool block are
+The 34 universal rules, the persona header and the shell-tool block are
 duplicated across all eight `presets/<id>/agent.cordis.yml` files by design —
 each preset directory is self-contained and the installer copies whole
 directories. That deliberate duplication is guarded against silent drift:
@@ -140,9 +143,9 @@ directories. That deliberate duplication is guarded against silent drift:
 node shared/check-consistency.mjs   # exit 1 (loudly, with file + line) on drift
 ```
 
-It verifies the 32 rules and the persona header are byte-identical across all
+It verifies the 34 rules and the persona header are byte-identical across all
 eight presets, that each rules block is structurally intact (exactly rules
-1..32, sequentially numbered), that both shell rows (`tool-bash` **and**
+1..34, sequentially numbered), that both shell rows (`tool-bash` **and**
 `tool-pwsh`) are present in the five shell presets and absent (read-only) in
 planner/advisor/hunter, that all eight copies of `plugins/discipline-guard.js`
 are byte-identical, and that `plugins/read-only-guard.js` exists in exactly

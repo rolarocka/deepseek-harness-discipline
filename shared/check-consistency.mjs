@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // check-consistency.mjs — drift guard for the 8 presets.
 //
-// The 32 universal rules, the persona header and the shell-tool block are
+// The 34 universal rules, the persona header and the shell-tool block are
 // intentionally duplicated across every presets/<id>/agent.cordis.yml because
 // each preset directory is self-contained (its plugin "travels with the
 // preset" and the installer copies whole directories). That deliberate
@@ -9,7 +9,7 @@
 // the others drifts silently. This script is the guard against that drift.
 //
 // It checks six things across all 8 presets:
-//   1. the 32 universal rules are byte-identical everywhere;
+//   1. the 34 universal rules are byte-identical everywhere;
 //   2. the persona header (the `- id: persona` row through the rules) is
 //      byte-identical everywhere;
 //   3. the shell-tool block state is as designed — BOTH rows (tool-bash and
@@ -22,7 +22,7 @@
 //      presets (planner, advisor, hunter), is byte-identical across them, and
 //      its `- id: read-only-guard` mount row is present there and absent in
 //      the shell presets;
-//   6. each rules block is structurally intact: exactly rules 1..32,
+//   6. each rules block is structurally intact: exactly rules 1..34,
 //      sequentially numbered (catches uniform insertions/deletions that the
 //      majority comparison below cannot see).
 //
@@ -71,7 +71,7 @@ for (const id of ALL_PRESETS) {
 
 const norm = (s) => s.replace(/\r\n/g, '\n');
 
-const RULE_COUNT = 32;
+const RULE_COUNT = 34;
 
 // Read each agent.cordis.yml exactly once; every check below works off this
 // shared map instead of re-reading the files.
@@ -86,7 +86,7 @@ function extract(id) {
   const rulesStart = lines.findIndex((l) => /^      1\. VERIFY BEFORE CLAIMING/.test(l));
   let rulesEnd = -1;
   for (let i = Math.max(0, rulesStart); i < lines.length; i++) {
-    if (/^      32\. REPORT AUDIT/.test(lines[i])) { rulesEnd = i; break; }
+    if (/^      34\. SURGICAL DIFF/.test(lines[i])) { rulesEnd = i; break; }
   }
   if (personaIdx < 0 || rulesStart < 0 || rulesEnd < 0) return null;
   const rules = lines.slice(rulesStart, rulesEnd + 1);
@@ -103,7 +103,7 @@ function extract(id) {
   return {
     header: lines.slice(personaIdx, rulesStart), // persona row through the rules' leading lines
     headerStart: personaIdx + 1, // 1-based file line of the header block
-    rules, // the 32 rules
+    rules, // the 34 rules
     rulesStart: rulesStart + 1, // 1-based file line of the first rule
   };
 }
@@ -113,8 +113,8 @@ for (const id of PRESETS) {
   const ex = extract(id);
   if (!ex) {
     console.error(`UNRECOGNIZED structure in presets/${id}/agent.cordis.yml — ` +
-      `cannot locate the '- id: persona' row or a well-formed 32-rule block ` +
-      `(exactly rules 1..32, sequentially numbered).`);
+      `cannot locate the '- id: persona' row or a well-formed 34-rule block ` +
+      `(exactly rules 1..34, sequentially numbered).`);
     process.exit(2);
   }
   files[id] = ex;
@@ -153,7 +153,7 @@ for (const id of PRESETS) {
   const f = files[id];
 
   if (majRules === null) {
-    failures.push({ id, block: 'rules', msg: 'no majority value — presets disagree on the 32 rules (tie)' });
+    failures.push({ id, block: 'rules', msg: 'no majority value — presets disagree on the 34 rules (tie)' });
   } else if (f.rules.join('\n') !== majRules) {
     const dR = diffFromMajority(f.rules, majRules.split('\n'));
     failures.push({ id, block: 'rules', line: f.rulesStart + dR, a: majRules.split('\n')[dR], b: f.rules[dR] });
@@ -299,6 +299,6 @@ if (failures.length > 0) {
 
 const present = SHELL_PRESETS.join(', ');
 const absent = READ_ONLY_PRESETS.join(', ');
-console.log(`OK: 32 rules + persona header + discipline-guard.js identical across ${PRESETS.length} presets; ` +
+console.log(`OK: 34 rules + persona header + discipline-guard.js identical across ${PRESETS.length} presets; ` +
   `read-only-guard.js identical across (${READ_ONLY_PRESETS.join(', ')}) and absent elsewhere; ` +
   `shell rows (tool-bash, tool-pwsh) present in (${present}) and absent in (${absent}).`);

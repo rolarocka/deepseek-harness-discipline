@@ -3,7 +3,8 @@
 You are installing the **deepseek-harness-discipline** preset pack into a local
 **DeepSeek Harness** (DSH) installation. The repo ships eight DSH agent presets
 (planner, builder, surgeon, advisor, design, scribe, tester, hunter — ported
-from opencode-agents) plus a deterministic discipline-guard plugin per preset.
+from opencode-agents) plus the user-authored local variant `optimized`, each
+with a deterministic discipline-guard plugin.
 
 ## What to do
 
@@ -16,14 +17,14 @@ from opencode-agents) plus a deterministic discipline-guard plugin per preset.
 
 2. Determine the DSH home (default `$HOME/.dsh`, or the value of `DSH_HOME`).
 
-3. Copy the eight preset directories into `<dsh-home>/.agent-presets/`:
+3. Copy the nine preset directories into `<dsh-home>/.agent-presets/`:
 
     - **PowerShell:** run `.\install.ps1` from the repo root (it does this for
       you, with backup + retention). Or manually:
 
       ```powershell
       New-Item -ItemType Directory -Force "$HOME\.dsh\.agent-presets" | Out-Null
-      Copy-Item -Recurse presets\planner, presets\builder, presets\surgeon, presets\advisor, presets\design, presets\scribe, presets\tester, presets\hunter "$HOME\.dsh\.agent-presets\"
+      Copy-Item -Recurse presets\planner, presets\builder, presets\surgeon, presets\advisor, presets\design, presets\scribe, presets\tester, presets\hunter, presets\optimized "$HOME\.dsh\.agent-presets\"
       ```
 
     - **bash (macOS/Linux):** run `./install.sh` from the repo root (backup +
@@ -31,7 +32,7 @@ from opencode-agents) plus a deterministic discipline-guard plugin per preset.
 
       ```bash
       mkdir -p "$HOME/.dsh/.agent-presets"
-      cp -r presets/planner presets/builder presets/surgeon presets/advisor presets/design presets/scribe presets/tester presets/hunter "$HOME/.dsh/.agent-presets/"
+      cp -r presets/planner presets/builder presets/surgeon presets/advisor presets/design presets/scribe presets/tester presets/hunter presets/optimized "$HOME/.dsh/.agent-presets/"
       ```
 
 4. Restart dsh (or open a new session). The presets appear in the preset
@@ -45,12 +46,15 @@ from opencode-agents) plus a deterministic discipline-guard plugin per preset.
    - `scribe` — Scribe (Docs)
    - `tester` — Tester (Coverage)
    - `hunter` — Hunter (Sweep), read-only
+   - `optimized` — Optimized (user-authored local variant: Android/Gradle
+     coding agent, own persona + condensed guard fork)
 
 5. Verify: start a session on any preset and try a full `read` of a file
    larger than 25 KB without `offset`/`limit` — it is rejected with guidance
    (discipline guard active). On planner, advisor or hunter, a `write` or
    `edit` attempt is rejected with a READ-ONLY PRESET message (read-only
-   guard active). The 32 universal rules are embedded in every persona.
+   guard active). The 34 universal rules are embedded in every discipline
+   preset persona; `optimized` carries its own condensed directives.
 
 ## Notes
 

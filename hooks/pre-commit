@@ -11,7 +11,7 @@ node "$(dirname "$0")/../shared/check-consistency.mjs" || {
 }
 
 # Fast unit tests for the guard plugins (pure helpers + apply() harness).
-# CI runs the same via `npm run test:all`.
+# CI runs the same checks as separate steps (consistency check + npm test).
 node --test || {
   echo "unit tests failed — run 'npm test' for details." >&2
   exit 1

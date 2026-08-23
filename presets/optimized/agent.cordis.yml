@@ -29,7 +29,8 @@
   name: './plugins/discipline-guard.js'
 
 # ── shell & execution environment ───────────────────────────────────────────
-# Both rows stay enabled (repo convention): no !!js loader dependency, the
+# Deliberate divergence from the eight ported presets (they switch rows via
+# !!js): both rows stay enabled unconditionally — no loader dependency, the
 # model picks the native shell via its environment rules. 600000 ms covers
 # cold Gradle builds that routinely exceed two minutes.
 

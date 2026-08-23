@@ -11,9 +11,9 @@ its source repository [opencode-agents](https://github.com/rolarocka/opencode-ag
 - **Source:** https://github.com/rolarocka/opencode-agents
 - **License:** MIT, Copyright (c) 2026 rolarocka
 - **Used for:**
-  - the 32 universal rules embedded in every `presets/*/agent.cordis.yml`
-    persona (adapted, trimmed of OpenCode-specific mechanics such as
-    `/caveman`, BrowserClaw and rtk);
+  - the first 32 of the 34 universal rules embedded in the eight discipline
+    `presets/*/agent.cordis.yml` personas (adapted, trimmed of
+    OpenCode-specific mechanics such as `/caveman`, BrowserClaw and rtk);
   - the persona role texts for all 8 presets: plan, build, surgical, advisor,
     design, scribe, tester, hunter (adapted from the `agent` prompts in
     `opencode.json` / `opencode.extended.json`);
@@ -56,21 +56,21 @@ for completeness.
 - **License:** Apache 2.0
 - **Used for:** rule 29 (CALL-GRAPH REACHABILITY — "compilation is NOT
   verification") and rule 30 (CIRCUIT BREAKER — change cap per pass,
-  convergence detection) in every persona.
+  convergence detection) in every discipline persona.
 
 ### TencentDB-Agent-Memory
 
 - **Source:** https://github.com/TencentCloud/TencentDB-Agent-Memory
 - **License:** MIT
 - **Used for:** rule 21 (LAYERED RECALL — capped memory results, name the
-  source) in every persona.
+  source) in every discipline persona.
 
 ### juliusbrussee/caveman
 
 - **Source:** https://github.com/juliusbrussee/caveman
 - **License:** MIT
 - **Used for:** rule 22 (TERSELY — compressed communication style) in every
-  persona.
+  discipline persona.
 
 ### mattpocock/skills
 
@@ -86,7 +86,19 @@ for completeness.
 - **Used for:** rules 31 (GATES LEDGER — acceptance gates written as
   `- [ ] G: ... CHECK: <command> EXPECT: <result>` with recorded evidence, not
   a feeling) and 32 (REPORT AUDIT — re-measure every number in the final
-  report at report time) in every persona.
+  report at report time) in every discipline persona.
+
+### multica-ai/andrej-karpathy-skills — SURFACE ASSUMPTIONS + SURGICAL DIFF
+
+- **Source:** https://github.com/multica-ai/andrej-karpathy-skills
+- **License:** MIT (behavioral guidelines distilled from Andrej Karpathy's
+  observations on LLM coding pitfalls)
+- **Used for:** rules 33 (SURFACE ASSUMPTIONS — state assumptions explicitly,
+  present competing interpretations instead of picking silently, push back
+  when a simpler approach exists) and 34 (SURGICAL DIFF — every changed line
+  traces to the request; no orthogonal improvements, no refactors of working
+  code, orphan cleanup limited to your own change) in every discipline
+  persona.
 
 ## Licenses
 

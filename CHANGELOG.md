@@ -9,6 +9,51 @@ The eight presets are intentional per-directory copies (self-contained install;
 the `discipline-guard.js` plugin "travels with the preset"), so an entry often
 touches all `presets/<id>` trees at once.
 
+## [Unreleased] — 2026-08-23
+
+### Added
+
+- **SURFACE ASSUMPTIONS + SURGICAL DIFF rules** — two rules added (32 → 34)
+  across all eight presets and the always-on discipline card, distilled from
+  [andrej-karpathy-skills](https://github.com/multica-ai/andrej-karpathy-skills)
+  (MIT; behavioral guidelines derived from Andrej Karpathy's observations on
+  LLM coding pitfalls): state assumptions explicitly, present competing
+  interpretations instead of running on a silent guess, and push back when a
+  simpler approach exists; keep every changed line traceable to the request —
+  no orthogonal improvements, no refactors of working code, orphan cleanup
+  limited to your own change. The consistency guard now asserts rules 1..34.
+- **`optimized` preset changelog catch-up** — entries the variant shipped with:
+  shell `timeoutMs` raised to 600000 ms (cold Gradle builds), `!!js` platform
+  switching replaced by two unconditionally enabled shell rows (no loader
+  dependency), dead `dsh-tool-ralph` config keys removed after schema
+  verification, and pure-repetition detection introduced in its guard fork
+  (since backported to all copies, see below).
+
+### Changed
+
+- **Oscillation breaker catches straight repetition** — A,A,A,A,A (same tool,
+  identical arguments, five calls in a row) now trips the circuit breaker in
+  all nine discipline-guard copies; previously only A,B,A,B,A alternation was
+  detected, so a pure repeat loop could run forever. Semantics backported
+  from the `optimized` fork and pinned by tests for both variants; README
+  breaker description updated accordingly.
+
+### Fixed
+
+- **`install.sh` retention broke on stock macOS** — pruning used `mapfile`
+  (bash ≥ 4), while macOS still ships bash 3.2: the script aborted with
+  exit 127 after installing but before pruning. Replaced with a plain
+  pipeline that works on bash 3.2+.
+- **`canonical()` never throws** — a BigInt argument made `JSON.stringify`
+  throw before the string fallback applied, violating the always-string
+  signature contract; bigints now serialize as `<value>n`.
+- **Docs sync after review** — README/THIRD-PARTY no longer claim the 32
+  rules live in *every* persona (`optimized` carries its own directives);
+  manual-install snippets and picker lists include `optimized`; stale
+  "platform-switched" descriptions, the CI step name and the pre-commit
+  comment corrected; the `optimized` shell-row comment now states the real
+  rationale (deliberate divergence, not repo convention).
+
 ## [Unreleased] — 2026-08-22
 
 ### Added
@@ -77,10 +122,10 @@ touches all `presets/<id>` trees at once.
 - **Local-variant preset `optimized`** — ninth preset, shipped verbatim from
   the maintainer's machine: Android/Gradle-focused persona, condensed
   discipline-guard fork (circuit breaker + large-read guard only),
-  platform-switched `tool-bash`/`tool-pwsh` rows and Android noise-filtered
-  fs-search excludes. Wired into both installers and existence-checked by the
-  consistency script (`LOCAL_PRESETS`), deliberately outside the byte-identity
-  contracts that bind the eight ported presets.
+  unconditional `tool-bash`/`tool-pwsh` rows (no `!!js` switching) and
+  Android noise-filtered fs-search excludes. Wired into both installers and
+  existence-checked by the consistency script (`LOCAL_PRESETS`), deliberately
+  outside the byte-identity contracts that bind the eight ported presets.
 - **GATES LEDGER + REPORT AUDIT rules** — two rules added (30 → 32) across all
   eight presets and the always-on discipline card, distilled from
   [unlazy](https://github.com/Leonxlnx/unlazy): before non-trivial work,
