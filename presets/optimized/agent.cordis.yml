@@ -16,6 +16,7 @@
       3. Deterministic Verification: Never declare a task complete without executing builds, tests, or static analysis.
       4. Minimal Diff Strategy: Write surgical, targeted code (YAGNI). Keep prose answers concise and preamble-free.
       5. Root-Cause Analysis: On build/test failures, analyze execution traces systematically from the tail log up.
+      6. Irreversible Operations: Never run git commit, push, tag, force-push, history rewrite, branch/tag deletion, or destructive database/migration commands without an explicit user request for that exact action first. Treat any credentials, tokens, or secrets found in the repo as sensitive — never print them in full and never commit them; flag their presence to the user instead.
 
 - id: agent-instructions
   name: '@deepseek-ai/dsh-agent-instructions'
@@ -28,18 +29,19 @@
   name: './plugins/discipline-guard.js'
 
 # ── shell & execution environment ───────────────────────────────────────────
+# Both rows stay enabled (repo convention): no !!js loader dependency, the
+# model picks the native shell via its environment rules. 600000 ms covers
+# cold Gradle builds that routinely exceed two minutes.
 
 - id: tool-bash
   name: '@deepseek-ai/dsh-tool-bash'
-  disabled: !!js process.platform === 'win32'
   config:
-    timeoutMs: 120000
+    timeoutMs: 600000
 
 - id: tool-pwsh
   name: '@deepseek-ai/dsh-tool-pwsh'
-  disabled: !!js process.platform !== 'win32'
   config:
-    timeoutMs: 120000
+    timeoutMs: 600000
 
 # ── filesystem & android noise-filtered search ──────────────────────────────
 
@@ -101,7 +103,7 @@
 
           The tool catalog stays the same across modes for request-cache stability. These plan-mode rules override any later tool description or guidance that suggests using mutation tools; those tools remain listed to keep the tool catalog unchanged. Do not use todo_write to track this planning phase: it tracks implementation after an approved plan, while the plan itself belongs in exit_plan_mode.
 
-          Resolve discoverable facts by inspection. Use ask_user_question only for user-owned choices or material ambiguity that inspection cannot answer. Do not ask the user where code lives or how current behavior works when you can find out.
+          Resolve discoverable facts by inspection. Use ask_user_question only for user-owned choices or material ambiguity that inspection cannot answer. Do not ask the user where code lives or how current behavior works when you can find out. For example, which Gradle module or Navigation destination currently owns a screen is discoverable by inspection; whether a new field should be nullable or required, when nothing specifies it, is a user-owned choice.
 
           Make the plan decision-complete: state the goal and success criteria; group implementation changes by subsystem; identify public API, schema, and data-flow changes; cover edge cases, failure modes, tests, acceptance criteria, and explicit assumptions. Keep it concise enough to review but detailed enough that another engineer can implement it without making design decisions.
 
@@ -130,6 +132,9 @@
         tailChars: 5120
 
 # ── delegation and workflows (Ralph Loop Engine) ─────────────────────────────
+# Verified against dsh-tool-ralph: the only config key is maxRounds
+# (default and deployment ceiling 256); autoCorrection / haltOnZeroDiff /
+# feedbackMode do not exist in the schema and were removed as dead config.
 
 - id: delegation
   name: cordis:group
@@ -170,9 +175,6 @@
       config:
         subagentProvider: spawn
         maxRounds: 64
-        autoCorrection: true
-        haltOnZeroDiff: true
-        feedbackMode: deterministic-test
 
 # ── remaining model-facing rows ─────────────────────────────────────────────
 
