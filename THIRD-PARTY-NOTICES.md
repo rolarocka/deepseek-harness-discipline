@@ -109,4 +109,4 @@ in the repo's `LICENSE` file.
 
 ---
 
-*Last updated: 2026-08-22*
+*Last updated: 2026-08-23*

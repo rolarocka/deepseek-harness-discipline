@@ -171,7 +171,10 @@ oscillation rings on `exec.agent`, and the `read-only-guard` plugin hooks
 ## License & credits
 
 MIT — see [LICENSE](LICENSE) and [THIRD-PARTY-NOTICES](THIRD-PARTY-NOTICES.md).
-The 30 rules, the persona roles and the large-read guard concept come from
-[opencode-agents](https://github.com/rolarocka/opencode-agents) (MIT); the
+The base 30 rules, the persona roles and the large-read guard concept come
+from [opencode-agents](https://github.com/rolarocka/opencode-agents) (MIT); the
 preset structure follows the shipped DSH presets
 ([deepseek-harness](https://github.com/deepseek-ai/deepseek-harness), MIT).
+Rules added later are credited per source in THIRD-PARTY-NOTICES — among them
+[andrej-karpathy-skills](https://github.com/multica-ai/andrej-karpathy-skills)
+(MIT; rules 33 SURFACE ASSUMPTIONS + 34 SURGICAL DIFF).
