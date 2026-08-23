@@ -30,10 +30,18 @@ See [CHANGELOG](CHANGELOG.md) for a full history of changes.
 | `scribe` | Documentation-only — keeps docs truthful and in sync with the code, drift checks, changelog discipline | ✅ |
 | `tester` | Proactively closes test-coverage gaps with TDD — test files only, never production code | ✅ |
 | `hunter` | Read-only whole-codebase sweep for bug classes, dead code and quality-gate risks | ❌ |
+| `optimized` | User-authored local variant — Android/Gradle coding agent, own persona + condensed guard fork, platform-switched shell tools | ✅ |
 
-Every preset embeds the **32 universal rules** (VERIFY BEFORE CLAIMING,
-QUALITY GATE, COMMIT GATE, LAYERED RECALL, TERSELY, CALL-GRAPH REACHABILITY,
-CIRCUIT BREAKER, …) plus a role section.
+The eight discipline presets embed the **32 universal rules** (VERIFY BEFORE
+CLAIMING, QUALITY GATE, COMMIT GATE, LAYERED RECALL, TERSELY, CALL-GRAPH
+REACHABILITY, CIRCUIT BREAKER, …) plus a role section.
+
+`optimized` ships verbatim as a user-authored local variant: its own
+Android/Gradle-focused persona, a condensed guard fork (circuit breaker +
+large-read guard only) and platform-switched `tool-bash`/`tool-pwsh` rows.
+Both installers deploy it and the consistency script verifies its file
+presence, but it is deliberately outside the byte-identity contracts that
+bind the eight ported presets.
 
 ## Discipline Guard (in every preset)
 

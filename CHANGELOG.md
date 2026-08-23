@@ -74,6 +74,13 @@ touches all `presets/<id>` trees at once.
 
 ### Added
 
+- **Local-variant preset `optimized`** — ninth preset, shipped verbatim from
+  the maintainer's machine: Android/Gradle-focused persona, condensed
+  discipline-guard fork (circuit breaker + large-read guard only),
+  platform-switched `tool-bash`/`tool-pwsh` rows and Android noise-filtered
+  fs-search excludes. Wired into both installers and existence-checked by the
+  consistency script (`LOCAL_PRESETS`), deliberately outside the byte-identity
+  contracts that bind the eight ported presets.
 - **GATES LEDGER + REPORT AUDIT rules** — two rules added (30 → 32) across all
   eight presets and the always-on discipline card, distilled from
   [unlazy](https://github.com/Leonxlnx/unlazy): before non-trivial work,

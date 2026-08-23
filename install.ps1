@@ -30,7 +30,7 @@ if (-not (Test-Path $src)) {
 $dest = Join-Path $DshHome ".agent-presets"
 New-Item -ItemType Directory -Force $dest | Out-Null
 
-foreach ($preset in "planner", "builder", "surgeon", "advisor", "design", "scribe", "tester", "hunter") {
+foreach ($preset in "planner", "builder", "surgeon", "advisor", "design", "scribe", "tester", "hunter", "optimized") {
   $from = Join-Path $src $preset
   $to = Join-Path $dest $preset
   if (-not (Test-Path $from)) { throw "preset dir missing: $from" }

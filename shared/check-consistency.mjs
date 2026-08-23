@@ -30,6 +30,10 @@
 // of a block still passes — majority comparison has no independent source of
 // truth for block content beyond structure (check 6).
 //
+// LOCAL_PRESETS ('optimized') ship verbatim as user-authored local variants:
+// only their file presence is verified; they intentionally do not take part
+// in checks 1–6 (own persona, own guard fork by design).
+//
 // On any mismatch it prints the offending file, the block, and the first line
 // where it diverges, then exits 1. No silent exit codes.
 //
@@ -49,7 +53,9 @@ const SHELL_PRESETS = ['builder', 'surgeon', 'design', 'scribe', 'tester'];
 const READ_ONLY_PRESETS = ['planner', 'advisor', 'hunter'];
 
 const PRESETS = [...SHELL_PRESETS, ...READ_ONLY_PRESETS];
-for (const id of PRESETS) {
+const LOCAL_PRESETS = ['optimized'];
+const ALL_PRESETS = [...PRESETS, ...LOCAL_PRESETS];
+for (const id of ALL_PRESETS) {
   let st;
   try {
     st = statSync(join(presetsDir, id, 'agent.cordis.yml'));

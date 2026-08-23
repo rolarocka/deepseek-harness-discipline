@@ -34,7 +34,7 @@ fi
 DEST="$DSH_HOME/.agent-presets"
 mkdir -p "$DEST"
 
-for preset in planner builder surgeon advisor design scribe tester hunter; do
+for preset in planner builder surgeon advisor design scribe tester hunter optimized; do
   from="$SRC/$preset"
   to="$DEST/$preset"
   if [[ ! -d "$from" ]]; then
@@ -80,3 +80,4 @@ echo ""
 echo "Done. Restart dsh (or open a new session) and pick a preset:"
 echo "  planner (Architect, read-only) | builder (TDD) | surgeon (minimal fixes) | advisor (reviewer, read-only)"
 echo "  design (UI/UX) | scribe (docs) | tester (coverage) | hunter (sweep, read-only)"
+echo "  optimized (local variant: Android/Gradle coding agent — own persona, reduced guard fork)"
