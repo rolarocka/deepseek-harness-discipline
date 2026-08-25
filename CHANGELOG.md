@@ -53,6 +53,30 @@ touches all `presets/<id>` trees at once.
   "platform-switched" descriptions, the CI step name and the pre-commit
   comment corrected; the `optimized` shell-row comment now states the real
   rationale (deliberate divergence, not repo convention).
+- **Whole-repo review hardening sweep** — findings from a two-axis review of
+  every tracked file (all verified by consistency check + unit tests):
+  - large-read guard normalizes `tool:`/`tool-` prefixes on `exec.name`
+    (same unpinned-contract stance as `read-only-guard`) in all nine copies;
+  - fs resolve/stat failures fail open but warn once instead of silently
+    skipping the >25 KB check;
+  - breaker deny reason + comments now cover straight repetition, not just
+    alternation; stale inline comments corrected;
+  - both installers roll the backup back when the copy step fails mid-loop,
+    so a preset can never be left absent; `install.ps1` is ASCII-only as its
+    header claims and lists `optimized` in its closing summary;
+  - `.gitattributes` pins `*.sh` and `hooks/pre-commit` to LF — CRLF
+    worktree copies made bash die on `pipefail\r` on default Windows clones;
+  - consistency guard: persona row end-anchored, a persona placed after the
+    rules is rejected, end-marker regex derived from `RULE_COUNT`,
+    duplicate-`- id:` check accepts indented rows;
+  - CI: Node 22/24 matrix (Node 20 is EOL), concurrency grouping, `push`
+    limited to main, actions bumped v4 → v7;
+  - tests pin the fork's `canonical()` bigint branch, prefixed read names,
+    the 25600/25601-byte boundary and the fail-open path; unused import
+    removed;
+  - docs: README verification note covers the ninth preset truthfully,
+    THIRD-PARTY-NOTICES scopes caveman's MIT carve-out (engine dirs are
+    BUSL-1.1 upstream), install.md documents `-DshHome`.
 
 ## [Unreleased] — 2026-08-22
 

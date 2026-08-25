@@ -5,7 +5,7 @@
 #         .\install.ps1 -KeepBackups 3   (keep the 3 newest backup stamps)
 #
 # After installing: restart dsh (or open a new session) and pick a preset in
-# the picker. Existing presets with the same id are NOT deleted — the previous
+# the picker. Existing presets with the same id are NOT deleted - the previous
 # version is preserved under <dest>/_backup/<timestamp>/<preset> before the
 # fresh copy is installed, so a broken install can always be reverted. Only
 # the newest $KeepBackups backup stamps are kept (minimum 1); older stamps are
@@ -33,6 +33,7 @@ New-Item -ItemType Directory -Force $dest | Out-Null
 foreach ($preset in "planner", "builder", "surgeon", "advisor", "design", "scribe", "tester", "hunter", "optimized") {
   $from = Join-Path $src $preset
   $to = Join-Path $dest $preset
+  $bak = $null
   if (-not (Test-Path $from)) { throw "preset dir missing: $from" }
   # Never delete the previous preset: preserve it under _backup/<timestamp>/<preset>
   # so a bad install can be reverted. The timestamp means repeated install runs
@@ -50,7 +51,16 @@ foreach ($preset in "planner", "builder", "surgeon", "advisor", "design", "scrib
     Write-Host "replacing existing preset: $preset"
     Write-Host "  previous version backed up to: $bak"
   }
-  Copy-Item -Recurse $from $to
+  # Roll back so a failed copy mid-loop never leaves the preset absent.
+  try {
+    Copy-Item -Recurse $from $to -ErrorAction Stop
+  } catch {
+    if ($bak) {
+      Move-Item -Path $bak -Destination $to
+      Write-Warning "copy failed for $preset - previous version restored"
+    }
+    throw
+  }
   Write-Host "installed $preset -> $to"
 }
 
@@ -72,3 +82,4 @@ Write-Host ""
 Write-Host "Done. Restart dsh (or open a new session) and pick a preset:"
 Write-Host "  planner (Architect, read-only) | builder (TDD) | surgeon (minimal fixes) | advisor (reviewer, read-only)"
 Write-Host "  design (UI/UX) | scribe (docs) | tester (coverage) | hunter (sweep, read-only)"
+Write-Host "  optimized (local variant: Android/Gradle coding agent - own persona, reduced guard fork)"

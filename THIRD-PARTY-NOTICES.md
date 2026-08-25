@@ -68,7 +68,9 @@ for completeness.
 ### juliusbrussee/caveman
 
 - **Source:** https://github.com/juliusbrussee/caveman
-- **License:** MIT
+- **License:** MIT (with an upstream scope carve-out: engine-linked
+  directories are licensed under BUSL-1.1 per that repo's LICENSE; rule 22
+  derives from MIT-covered content)
 - **Used for:** rule 22 (TERSELY — compressed communication style) in every
   discipline persona.
 

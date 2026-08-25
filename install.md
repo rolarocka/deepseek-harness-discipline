@@ -59,6 +59,7 @@ with a deterministic discipline-guard plugin.
 ## Notes
 
 - Existing presets with the same ids in `.agent-presets/` are preserved: `install.ps1` / `install.sh` move the previous version to `<dest>/_backup/<timestamp>/<preset>` before installing the fresh copy, so a broken install can be reverted. Repeated installs keep only the newest backup stamps (`.\install.ps1 -KeepBackups N` / `KEEP_BACKUPS=N ./install.sh`, default 5; older stamps are pruned). Manual copies (`cp`/`Copy-Item`) overwrite or merge instead and keep no backup — prefer the install scripts.
+- Target directory override: `$HOME/.dsh` by default — `DSH_HOME=/custom/dsh ./install.sh` on bash, `.\install.ps1 -DshHome C:\custom\dsh` on Windows PowerShell.
 - The presets reference their plugin files via relative rows
   (`./plugins/discipline-guard.js`, and `./plugins/read-only-guard.js` in
   planner/advisor/hunter), so each preset directory is self-contained and can

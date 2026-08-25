@@ -1,8 +1,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { canonical, isOscillating, recordCall, unrecordCall, OSC_WINDOW, PARTIAL_WINDOW_LINES, isPartialRead, name as guardName, apply as guardApply } from '../presets/builder/plugins/discipline-guard.js'
+import { canonical, isOscillating, recordCall, unrecordCall, OSC_WINDOW, PARTIAL_WINDOW_LINES, isPartialRead, apply as guardApply } from '../presets/builder/plugins/discipline-guard.js'
 import { DENIED_TOOLS, isDeniedTool, name as roName, apply as roApply } from '../presets/planner/plugins/read-only-guard.js'
-import { isOscillating as optIsOscillating } from '../presets/optimized/plugins/discipline-guard.js'
+import { isOscillating as optIsOscillating, canonical as optCanonical } from '../presets/optimized/plugins/discipline-guard.js'
 
 test('canonical: primitives are JSON-represented', () => {
   assert.equal(canonical('read file.txt'), '"read file.txt"')
@@ -19,6 +19,9 @@ test('canonical: undefined/function/symbol/bigint still yield a string signature
   assert.equal(typeof canonical(() => 'x'), 'string')
   assert.equal(canonical(Symbol('x')), 'Symbol(x)')
   assert.equal(canonical(10n), '10n') // JSON.stringify would THROW on bigint
+  // The fork sits outside every byte-identity contract, so its copy of the
+  // bigint branch is pinned here too.
+  assert.equal(optCanonical(10n), '10n')
 })
 
 test('canonical: object keys are sorted, so key order does not matter', () => {
@@ -84,6 +87,13 @@ test('isPartialRead: missing or oversized limit is a full read', () => {
   assert.equal(isPartialRead({ limit: '200' }), false) // non-numeric limit
   assert.equal(isPartialRead(null), false)
   assert.equal(isPartialRead(undefined), false)
+})
+
+// Non-finite or negative limits can never describe a bounded window.
+test('isPartialRead: NaN/Infinity/negative limits are full reads', () => {
+  assert.equal(isPartialRead({ limit: NaN }), false)
+  assert.equal(isPartialRead({ limit: Infinity }), false)
+  assert.equal(isPartialRead({ limit: -5 }), false)
 })
 
 test('unrecordCall: removes one equal entry, tolerates a missing entry', () => {
@@ -194,6 +204,44 @@ test('discipline-guard apply(): full read of a >25 KB file is denied with window
   assert.match(denied.reason, /offset\/limit/)
   // bounded windows pass through to the host
   assert.equal(await preExecute(execOf('read', { file_path: 'big.txt', offset: 1, limit: PARTIAL_WINDOW_LINES }), NEXT), 'allowed')
+})
+
+// The exact exec.name form is not a pinned DSH contract (see read-only-guard's
+// isDeniedTool), so prefixed read names must hit the large-read guard too.
+test('discipline-guard apply(): tool-prefixed read names still hit the large-read guard', async () => {
+  const fs = { resolve: async () => ({}), stat: async () => ({ size: 120 * 1024 }) }
+  const { ctx, handlers } = fakeCtx({ fs })
+  guardApply(ctx)
+  const preExecute = handlers["tools/pre-execute"]
+  for (const name of ['tool:read', 'tool-read']) {
+    const denied = await preExecute(execOf(name, { file_path: 'big.txt' }), NEXT)
+    assert.equal(denied.kind, 'deny', `${name} should be guarded`)
+    assert.match(denied.reason, /120 KB/)
+  }
+})
+
+// Boundary: "strictly over 25 KB" — a file of exactly LARGE_READ_BYTES passes,
+// one byte more is denied.
+test('discipline-guard apply(): 25600-byte read passes, 25601 is denied', async () => {
+  const mkFs = (size) => ({ resolve: async () => ({}), stat: async () => ({ size }) })
+  const run = async (size, file) => {
+    const { ctx, handlers } = fakeCtx({ fs: mkFs(size) })
+    guardApply(ctx)
+    return handlers["tools/pre-execute"](execOf('read', { file_path: file }), NEXT)
+  }
+  assert.equal(await run(25600, 'exact.txt'), 'allowed')
+  const over = await run(25601, 'over.txt')
+  assert.equal(over.kind, 'deny')
+})
+
+// Fail-open path: when fs resolve/stat rejects, the call is allowed — but the
+// slip-through is not silent (the guard warns once).
+test('discipline-guard apply(): fs failure fails open (call allowed)', async () => {
+  const fs = { resolve: async () => { throw new Error('boom') }, stat: async () => { throw new Error('boom') } }
+  const { ctx, handlers } = fakeCtx({ fs })
+  guardApply(ctx)
+  const preExecute = handlers["tools/pre-execute"]
+  assert.equal(await preExecute(execOf('read', { file_path: 'big.txt' }), NEXT), 'allowed')
 })
 
 test('read-only-guard apply(): write, edit, bash, pwsh are denied, read passes through', async () => {

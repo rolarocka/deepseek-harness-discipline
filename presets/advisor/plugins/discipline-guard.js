@@ -27,8 +27,8 @@
 // again (hard stop) instead of shifting the phase and letting the cycle
 // resume.
 
-export const OSC_WINDOW = 5; // A,B,A,B denies the 5th call
-const LARGE_READ_BYTES = 25600; // mirrors plugins/token-optimizer.js
+export const OSC_WINDOW = 5 // A,B,A,B,A or A,A,A,A,A denies the 5th call
+const LARGE_READ_BYTES = 25600 // mirrors plugins/token-optimizer.js
 // A "partial window" is a bounded slice: a numeric limit no larger than this
 // many lines. On DSH (verified against dsh-tool-fs 0.1.0-rc.7) a read without
 // a limit defaults to the host cap of 2000 lines with a ~50 KB response cap,
@@ -97,7 +97,7 @@ export function isPartialRead(args) {
   return typeof lim === 'number' && Number.isFinite(lim) && lim > 0 && lim <= PARTIAL_WINDOW_LINES
 }
 
-const name = 'discipline-guard';
+const name = 'discipline-guard'
 
 function apply(ctx) {
   const fsService = ctx.get('fs')
@@ -134,11 +134,14 @@ function apply(ctx) {
   // a pre-execute event carries no usable `exec.agent`.
   let fallbackRing = []
   let warnedMissingAgent = false
+  // First-time-only latch for fs resolve/stat failures: the large-read guard
+  // fails open on those, and a silent slip-through must not go unnoticed.
+  let warnedFsFailure = false
   const agentKey = (exec) => (exec && typeof exec.agent === 'object' && exec.agent !== null ? exec.agent : null)
 
   ctx.on('tools/pre-execute', async (exec, next) => {
     // 1) Oscillation circuit breaker: the last OSC_WINDOW signatures form
-    //    A,B,A,B,A.
+    //    A,B,A,B,A or A,A,A,A,A.
     const key = agentKey(exec)
     let ring
     if (key !== null) {
@@ -157,12 +160,12 @@ function apply(ctx) {
     const sig = exec.name + ' ' + canonical(exec.arguments)
     if (recordCall(ring, sig)) {
       // Denied calls are not history: unrecord the signature so an identical
-      // retry lands on the same A,B,A,B ring and denies again (hard stop)
+      // retry lands on the same ring pattern and denies again (hard stop)
       // instead of shifting the phase and letting the cycle resume.
       unrecordCall(ring, sig)
       return {
         kind: 'deny',
-        reason: 'CIRCUIT BREAKER: oscillating between "' + exec.name + '" and the previous call (' + OSC_WINDOW + '-call cycle). Change ONE variable or stop and ask the user; do not repeat the cycle.',
+        reason: 'CIRCUIT BREAKER: repeating or oscillating call pattern ("' + exec.name + '", ' + OSC_WINDOW + '-call window). Change ONE variable or stop and ask the user; do not repeat the cycle.',
       }
     }
 
@@ -170,7 +173,11 @@ function apply(ctx) {
     //    denied with partial-window guidance. A window counts as partial
     //    only when it is bounded (see isPartialRead): no limit, an offset
     //    without a limit, or an oversized limit all reach whole-file scale.
-    if (exec.name !== 'read') return next()
+    // Same normalization as read-only-guard's isDeniedTool: the exact
+    // exec.name form is a DSH contract we do not pin to, so tool:read /
+    // tool-read must still hit the large-read guard.
+    const toolName = typeof exec.name === 'string' ? exec.name.replace(/^tool[:\-]/, '') : ''
+    if (toolName !== 'read') return next()
     const args = exec.arguments
     if (args === null || typeof args !== 'object') return next()
     if (isPartialRead(args)) return next()
@@ -180,12 +187,24 @@ function apply(ctx) {
     try {
       target = await fsService.resolve(raw, { signal: exec.signal })
     } catch {
+      // Fail open, but say so ONCE: silently skipping lets a >25 KB read
+      // through whenever fs resolve/stat rejects.
+      if (!warnedFsFailure) {
+        warnedFsFailure = true
+        console.warn('discipline-guard: fs resolve/stat failed — large-read guard skipped this call.')
+      }
       return next()
     }
     let info
     try {
       info = await fsService.stat(target, exec.signal)
     } catch {
+      // Fail open, but say so ONCE: silently skipping lets a >25 KB read
+      // through whenever fs resolve/stat rejects.
+      if (!warnedFsFailure) {
+        warnedFsFailure = true
+        console.warn('discipline-guard: fs resolve/stat failed — large-read guard skipped this call.')
+      }
       return next()
     }
     // strictly "over 25 KB": a file of exactly LARGE_READ_BYTES passes.

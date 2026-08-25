@@ -72,6 +72,10 @@ for (const id of ALL_PRESETS) {
 const norm = (s) => s.replace(/\r\n/g, '\n');
 
 const RULE_COUNT = 34;
+// The last rule's title builds the rules-block end marker from RULE_COUNT
+// itself, so a future rule bump cannot desync count and end marker.
+const LAST_RULE_TITLE = 'SURGICAL DIFF';
+const lastRuleRe = new RegExp('^      ' + RULE_COUNT + '\\. ' + LAST_RULE_TITLE);
 
 // Read each agent.cordis.yml exactly once; every check below works off this
 // shared map instead of re-reading the files.
@@ -82,13 +86,16 @@ for (const id of PRESETS) text[id] = norm(readFileSync(join(presetsDir, id, 'age
 // structure is unrecognizable (missing the - id: persona row or the rules).
 function extract(id) {
   const lines = text[id].split('\n');
-  const personaIdx = lines.findIndex((l) => /^- id: persona/.test(l));
+  const personaIdx = lines.findIndex((l) => /^- id: persona$/.test(l));
   const rulesStart = lines.findIndex((l) => /^      1\. VERIFY BEFORE CLAIMING/.test(l));
   let rulesEnd = -1;
   for (let i = Math.max(0, rulesStart); i < lines.length; i++) {
-    if (/^      34\. SURGICAL DIFF/.test(lines[i])) { rulesEnd = i; break; }
+    if (lastRuleRe.test(lines[i])) { rulesEnd = i; break; }
   }
   if (personaIdx < 0 || rulesStart < 0 || rulesEnd < 0) return null;
+  // A persona row placed AFTER the rules would make the header slice
+  // vacuously empty and pass; treat that as an unrecognized structure.
+  if (personaIdx > rulesStart) return null;
   const rules = lines.slice(rulesStart, rulesEnd + 1);
   // Structural integrity: exactly rules 1..RULE_COUNT, sequentially numbered.
   // The majority comparison below cannot catch an edit applied identically to
@@ -273,7 +280,7 @@ for (const id of PRESETS) {
 for (const id of PRESETS) {
   const seen = new Map();
   for (const l of text[id].split('\n')) {
-    const m = l.match(/^- id: (\S+)$/);
+    const m = l.match(/^ *- id: (\S+)$/);
     if (!m) continue;
     const n = (seen.get(m[1]) ?? 0) + 1;
     seen.set(m[1], n);

@@ -3,7 +3,9 @@
 // (itself ported from opencode-agents / token-optimizer-mcp, MIT — see
 // THIRD-PARTY-NOTICES.md). Differences from the 8-preset copies, by design:
 //   - no DENIED_TOOLS layer (this preset is write-enabled);
-//   - calls without resolvable exec.agent are skipped, not pooled.
+//   - calls without resolvable exec.agent are skipped, not pooled;
+//   - no always-on discipline card (the persona yml carries condensed rules);
+//   - deny-reason texts use fork-local wording.
 
 export const OSC_WINDOW = 5;
 export const LARGE_READ_BYTES = 25600; // 25 KB
@@ -58,6 +60,8 @@ function apply(ctx) {
   const rings = new WeakMap();
   const agentKey = (exec) => (exec && typeof exec.agent === 'object' && exec.agent !== null ? exec.agent : null);
   let warnedNoAgent = false;
+  // First-time-only latch for fs resolve/stat failures (see catch below).
+  let warnedFsFailure = false;
 
   ctx.on('tools/pre-execute', async (exec, next) => {
     const key = agentKey(exec);
@@ -94,7 +98,11 @@ function apply(ctx) {
     // Contract verified against dsh-tool-fs 0.1.0-rc.7: the read tool is
     // named 'read', takes string `file_path` and an optional numeric
     // `limit` in lines (no limit -> host cap of 2000 lines / ~50 KB).
-    if (exec.name !== 'read') return next();
+    // Same prefix-normalization rationale as the 8-preset copies: exec.name's
+    // exact form is not a pinned DSH contract, so tool:read / tool-read must
+    // still hit the large-read guard.
+    const toolName = typeof exec.name === 'string' ? exec.name.replace(/^tool[:\-]/, '') : '';
+    if (toolName !== 'read') return next();
     const args = exec.arguments;
     if (args === null || typeof args !== 'object' || isPartialRead(args)) return next();
 
@@ -114,6 +122,13 @@ function apply(ctx) {
         };
       }
     } catch {
+      // Fail open, but say so ONCE (same policy as the 8-preset copies):
+      // silently skipping lets a >25 KB read through whenever resolve/stat
+      // rejects.
+      if (!warnedFsFailure) {
+        warnedFsFailure = true;
+        console.warn('[discipline-guard] fs resolve/stat failed — large-read guard skipped this call');
+      }
       return next();
     }
 

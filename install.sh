@@ -14,6 +14,9 @@
 # milliseconds where the platform's date supports them; the backup path is
 # additionally bumped until free, so two installs within the same second
 # never collide on any platform.
+#
+# This file must stay LF-only (enforced by .gitattributes): a CRLF worktree
+# copy makes bash die on `pipefail\r` before doing anything.
 
 set -euo pipefail
 
@@ -37,6 +40,7 @@ mkdir -p "$DEST"
 for preset in planner builder surgeon advisor design scribe tester hunter optimized; do
   from="$SRC/$preset"
   to="$DEST/$preset"
+  bak=""
   if [[ ! -d "$from" ]]; then
     echo "preset dir missing: $from" >&2
     exit 2
@@ -61,7 +65,15 @@ for preset in planner builder surgeon advisor design scribe tester hunter optimi
     echo "replacing existing preset: $preset"
     echo "  previous version backed up to: $bak"
   fi
-  cp -r "$from" "$to"
+  # Roll back so a failed cp mid-loop never leaves the preset absent.
+  if ! cp -r "$from" "$to"; then
+    echo "copy failed for $preset" >&2
+    if [[ -n "$bak" ]]; then
+      mv "$bak" "$to"
+      echo "  previous version restored from backup" >&2
+    fi
+    exit 1
+  fi
   echo "installed $preset -> $to"
 done
 
@@ -69,9 +81,11 @@ done
 bakRoot="$DEST/_backup"
 if [[ -d "$bakRoot" ]]; then
   # Plain pipeline, no mapfile/array-from-subshell: mapfile needs bash >= 4,
-  # stock macOS still ships bash 3.2. The while loop runs in a pipeline
-  # subshell, which is fine here — pruning only needs side effects.
-  ls -1 "$bakRoot" 2>/dev/null | sort -r | tail -n +"$((KEEP_BACKUPS + 1))" |
+  # stock macOS still ships bash 3.2. The ls stage is grouped with || true so
+  # a race/permission failure cannot abort the script under pipefail after
+  # installing but before pruning. The while loop runs in a pipeline subshell,
+  # which is fine here — pruning only needs side effects.
+  (ls -1 "$bakRoot" 2>/dev/null || true) | sort -r | tail -n +"$((KEEP_BACKUPS + 1))" |
     while IFS= read -r d; do
       [[ -n "$d" ]] || continue
       rm -rf "$bakRoot/$d"

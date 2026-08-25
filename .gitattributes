@@ -1,0 +1,4 @@
+# Bash entry points die on CRLF (`pipefail\r`); keep them checkout-LF on
+# every platform regardless of core.autocrlf.
+*.sh text eol=lf
+hooks/pre-commit text eol=lf
